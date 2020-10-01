@@ -66,10 +66,6 @@ void cameraCallback(ConstImageStampedPtr &msg)
 }
 
 
-void fuzzyController(){
-
-
-}
 
 void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
