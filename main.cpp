@@ -2,13 +2,20 @@
 #include <gazebo/msgs/msgs.hh>
 #include <gazebo/transport/transport.hh>
 
+#include <opencv2/opencv.hpp>
+
 #include "fl/Headers.h"
 
-#include <opencv2/opencv.hpp>
+#include "marbledetection.h"
 
 #include <iostream>
 
-static boost::mutex mutex;
+const bool showLidar = false;
+const bool showPose = false;
+const bool showCamera = false;
+const bool showStat = false;
+
+boost::mutex mutex;
 
 void statCallback(ConstWorldStatisticsPtr &_msg) {
   (void)_msg;
@@ -36,22 +43,58 @@ void poseCallback(ConstPosesStampedPtr &_msg) {
   }
 }
 
-void cameraCallback(ConstImageStampedPtr &msg) {
 
+void detectCircles(cv::Mat image){
+    // Detect circles in image
+    // Create a vector for detected circles
+    std::vector<cv::Vec3f>  circles;
+    // Apply Hough Transform
+    HoughCircles(image, circles, cv::HOUGH_GRADIENT, 1, image.rows/64, 200, 10, 5, 30);
+    // Draw detected circles
+    for(size_t i=0; i<circles.size(); i++) {
+        cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+        int radius = cvRound(circles[i][2]);
+        std::cout << radius << std::endl;
+        circle(image, center, radius, cv::Scalar(255, 255, 255), 2, 8, 0);
+      }
+}
+
+void cameraCallback(ConstImageStampedPtr &msg)
+{
+  static bool initialized;
+  if (!initialized)
+  {
+      initialized = true;
+      cv::namedWindow("camera", cv::WINDOW_AUTOSIZE);
+  }
   std::size_t width = msg->image().width();
   std::size_t height = msg->image().height();
   const char *data = msg->image().data().c_str();
   cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
 
-  im = im.clone();
   cv::cvtColor(im, im, cv::COLOR_RGB2BGR);
-
+  //cv::cvtColor(im, im, CV_RGB2GRAY);
+  //cv::GaussianBlur( im, im, Size(9, 9), 2, 2 );
   mutex.lock();
   cv::imshow("camera", im);
   mutex.unlock();
 }
 
+
+void fuzzyController(){
+
+
+}
+
 void lidarCallback(ConstLaserScanStampedPtr &msg) {
+
+  mutex.lock();
+
+  static bool initialized;
+  if(!initialized){
+    initialized = true;
+    cv::namedWindow("Lidar", cv::WINDOW_AUTOSIZE);
+  }
 
   //  std::cout << ">> " << msg->DebugString() << std::endl;
   float angle_min = float(msg->scan().angle_min());
@@ -93,24 +136,70 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
               cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
               cv::Scalar(255, 0, 0));
 
-  mutex.lock();
+
+  cv::moveWindow("Lidar", 1500, 350);
   cv::imshow("lidar", im);
   mutex.unlock();
 }
 
+
+
 int main(int _argc, char **_argv) {
 
+    using namespace fl;
 
-    //using namespace fl;
-    fl::Engine* engine = fl::FllImporter().fromFile("ObstacleAvoidance.fll");
+    Engine* engine = new Engine;
+    engine->setName("ObstacleAvoidance");
+    engine->setDescription("");
+
+    InputVariable* obstacle= new InputVariable;
+    //obstaclLeft->setValue(lidarLeft)
+    obstacle->setName("obstacle");
+    obstacle->setDescription("");
+    obstacle->setEnabled(true);
+    obstacle->setRange(0.000, 1.000);
+    obstacle->setLockValueInRange(false);
+    obstacle->addTerm(new Ramp("left", 1.000, 0.000));
+    obstacle->addTerm(new Ramp("right", 0.000, 1.000));
+    engine->addInputVariable(obstacle);
+
+    OutputVariable* mSteer = new OutputVariable;
+    mSteer->setName("mSteer");
+    mSteer->setDescription("");
+    mSteer->setEnabled(true);
+    mSteer->setRange(0.000, 1.000);
+    mSteer->setLockValueInRange(false);
+    mSteer->setAggregation(new Maximum);
+    mSteer->setDefuzzifier(new Centroid(100));
+    mSteer->setDefaultValue(fl::nan);
+    mSteer->setLockPreviousValue(false);
+    mSteer->addTerm(new Ramp("left", 1.000, 0.000));
+    mSteer->addTerm(new Ramp("right", 0.000, 1.000));
+    engine->addOutputVariable(mSteer);
+
+    RuleBlock* mamdani = new RuleBlock;
+    mamdani->setName("mamdani");
+    mamdani->setDescription("");
+    mamdani->setEnabled(true);
+    mamdani->setConjunction(fl::null);
+    mamdani->setDisjunction(fl::null);
+    mamdani->setImplication(new AlgebraicProduct);
+    mamdani->setActivation(new General);
+    mamdani->addRule(Rule::parse("if obstacle is left then mSteer is right", engine));
+    mamdani->addRule(Rule::parse("if obstacle is right then mSteer is left", engine));
+    engine->addRuleBlock(mamdani);
 
     std::string status;
     if (not engine->isReady(&status))
         throw fl::Exception("[engine error] engine is not ready:n" + status, FL_AT);
 
-    fl::InputVariable* obstacle = engine->getInputVariable("obstacle");
-    fl::OutputVariable* steer = engine->getOutputVariable("mSteer");
-
+    for (int i = 0; i <= 50; ++i){
+        scalar location = obstacle->getMinimum() + i * (obstacle->range() / 50);
+        obstacle->setValue(location);
+        engine->process();
+        FL_LOG("obstacle.input = " << Op::str(location) <<
+            " => " << "steer.output = " << Op::str(mSteer->getValue()));
+    }
 
   // Load gazebo
   gazebo::client::setup(_argc, _argv);
@@ -120,25 +209,39 @@ int main(int _argc, char **_argv) {
   node->Init();
 
   // Listen to Gazebo topics
-  gazebo::transport::SubscriberPtr statSubscriber =
-      node->Subscribe("~/world_stats", statCallback);
+  gazebo::transport::SubscriberPtr statSubscriber;
+  gazebo::transport::SubscriberPtr poseSubscriber;
+  gazebo::transport::SubscriberPtr cameraSubscriber;
+  gazebo::transport::SubscriberPtr lidarSubscriber;
 
-  gazebo::transport::SubscriberPtr poseSubscriber =
-      node->Subscribe("~/pose/info", poseCallback);
+  if(showStat)
+  {
+     statSubscriber = node->Subscribe("~/world_stats", statCallback);
+  }
 
-  gazebo::transport::SubscriberPtr cameraSubscriber =
-      node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
+  if(showCamera)
+  {
+    cameraSubscriber = node->Subscribe("~/pioneer2dx/camera/link/camera/image", cameraCallback);
+  }
 
-  gazebo::transport::SubscriberPtr lidarSubscriber =
-      node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
+  if(showPose)
+  {
+    poseSubscriber = node->Subscribe("~/pose/info", poseCallback);
+  }
+
+  if(showLidar)
+  {
+    lidarSubscriber = node->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", lidarCallback);
+  }
+
 
   // Publish to the robot vel_cmd topic
-  gazebo::transport::PublisherPtr movementPublisher =
-      node->Advertise<gazebo::msgs::Pose>("~/pioneer2dx/vel_cmd");
+  gazebo::transport::PublisherPtr movementPublisher = node->Advertise<gazebo::msgs::Pose>("~/pioneer2dx/vel_cmd");
 
   // Publish a reset of the world
-  gazebo::transport::PublisherPtr worldPublisher =
-      node->Advertise<gazebo::msgs::WorldControl>("~/world_control");
+  gazebo::transport::PublisherPtr worldPublisher = node->Advertise<gazebo::msgs::WorldControl>("~/world_control");
+
+
   gazebo::msgs::WorldControl controlMessage;
   controlMessage.mutable_reset()->set_all(true);
   worldPublisher->WaitForConnection();
@@ -153,16 +256,22 @@ int main(int _argc, char **_argv) {
   float speed = 0.0;
   float dir = 0.0;
 
+  MarbleDetection marble;
+
+  double test = marble.getMarbleDistance();
+
+  std::cout << test << std::endl;
+
+
   // Loop
   while (true) {
     gazebo::common::Time::MSleep(10);
 
-    mutex.lock();
     int key = cv::waitKey(1);
-    mutex.unlock();
 
-    if (key == key_esc)
+    if (key == key_esc){
       break;
+    }
 
     if ((key == key_up) && (speed <= 1.2f))
       speed += 0.05;
