@@ -44,21 +44,6 @@ void poseCallback(ConstPosesStampedPtr &_msg) {
 }
 
 
-void detectCircles(cv::Mat image){
-    // Detect circles in image
-    // Create a vector for detected circles
-    std::vector<cv::Vec3f>  circles;
-    // Apply Hough Transform
-    HoughCircles(image, circles, cv::HOUGH_GRADIENT, 1, image.rows/64, 200, 10, 5, 30);
-    // Draw detected circles
-    for(size_t i=0; i<circles.size(); i++) {
-        cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-        int radius = cvRound(circles[i][2]);
-        std::cout << radius << std::endl;
-        circle(image, center, radius, cv::Scalar(255, 255, 255), 2, 8, 0);
-      }
-}
-
 void cameraCallback(ConstImageStampedPtr &msg)
 {
   static bool initialized;
