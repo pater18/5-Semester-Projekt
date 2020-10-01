@@ -10,12 +10,14 @@
 
 #include <iostream>
 
+
 const bool showLidar = false;
 const bool showPose = false;
 const bool showCamera = false;
 const bool showStat = false;
 
 boost::mutex mutex;
+
 
 void statCallback(ConstWorldStatisticsPtr &_msg) {
   (void)_msg;
@@ -24,10 +26,12 @@ void statCallback(ConstWorldStatisticsPtr &_msg) {
   //  std::cout << std::flush;
 }
 
+
 void poseCallback(ConstPosesStampedPtr &_msg) {
   // Dump the message contents to stdout.
   //  std::cout << _msg->DebugString();
 
+  // Pose for the robot
   for (int i = 0; i < _msg->pose_size(); i++) {
     if (_msg->pose(i).name() == "pioneer2dx") {
 
@@ -46,23 +50,30 @@ void poseCallback(ConstPosesStampedPtr &_msg) {
 
 void cameraCallback(ConstImageStampedPtr &msg)
 {
+
+  mutex.lock();
+
   static bool initialized;
   if (!initialized)
   {
       initialized = true;
       cv::namedWindow("camera", cv::WINDOW_AUTOSIZE);
   }
+  // Convert msg image to a Mat object
   std::size_t width = msg->image().width();
   std::size_t height = msg->image().height();
   const char *data = msg->image().data().c_str();
   cv::Mat im(int(height), int(width), CV_8UC3, const_cast<char *>(data));
 
+  // convert color and smooth image to reduce noise
   cv::cvtColor(im, im, cv::COLOR_RGB2BGR);
   //cv::cvtColor(im, im, CV_RGB2GRAY);
   //cv::GaussianBlur( im, im, Size(9, 9), 2, 2 );
-  mutex.lock();
+
+  // Show camera frame
   cv::imshow("camera", im);
   mutex.unlock();
+
 }
 
 
@@ -82,12 +93,14 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
   //  double angle_max = msg->scan().angle_max();
   float angle_increment = float(msg->scan().angle_step());
 
+  // min and max range for lidar
   float range_min = float(msg->scan().range_min());
   float range_max = float(msg->scan().range_max());
 
   int sec = msg->time().sec();
   int nsec = msg->time().nsec();
 
+  // resolution of lidar
   int nranges = msg->scan().ranges_size();
   int nintensities = msg->scan().intensities_size();
 
@@ -99,8 +112,11 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
 
   cv::Mat im(height, width, CV_8UC3);
   im.setTo(0);
+  // go through all the lidar points - get distance - draw points and lines for displaying lidar data
   for (int i = 0; i < nranges; i++) {
+    // angle for the lidar point
     float angle = angle_min + i * angle_increment;
+    // distance from robot to where the lidar point hit an obstacle
     float range = std::min(float(msg->scan().ranges(i)), range_max);
     //    double intensity = msg->scan().intensities(i);
     cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
@@ -118,6 +134,7 @@ void lidarCallback(ConstLaserScanStampedPtr &msg) {
               cv::Scalar(255, 0, 0));
 
 
+  // Show the lidar data
   cv::moveWindow("Lidar", 1500, 350);
   cv::imshow("lidar", im);
   mutex.unlock();
@@ -129,10 +146,12 @@ int main(int _argc, char **_argv) {
 
     using namespace fl;
 
+    // Fuzzy Logic Controller
     Engine* engine = new Engine;
     engine->setName("ObstacleAvoidance");
     engine->setDescription("");
 
+    // Inputs to the controller
     InputVariable* obstacle= new InputVariable;
     //obstaclLeft->setValue(lidarLeft)
     obstacle->setName("obstacle");
@@ -144,6 +163,7 @@ int main(int _argc, char **_argv) {
     obstacle->addTerm(new Ramp("right", 0.000, 1.000));
     engine->addInputVariable(obstacle);
 
+    // Outputs from the controller
     OutputVariable* mSteer = new OutputVariable;
     mSteer->setName("mSteer");
     mSteer->setDescription("");
@@ -158,6 +178,7 @@ int main(int _argc, char **_argv) {
     mSteer->addTerm(new Ramp("right", 0.000, 1.000));
     engine->addOutputVariable(mSteer);
 
+    // Rule Block/Base for the controller
     RuleBlock* mamdani = new RuleBlock;
     mamdani->setName("mamdani");
     mamdani->setDescription("");
@@ -195,6 +216,7 @@ int main(int _argc, char **_argv) {
   gazebo::transport::SubscriberPtr cameraSubscriber;
   gazebo::transport::SubscriberPtr lidarSubscriber;
 
+  // Display the different types of data/information/frames
   if(showStat)
   {
      statSubscriber = node->Subscribe("~/world_stats", statCallback);
@@ -228,20 +250,19 @@ int main(int _argc, char **_argv) {
   worldPublisher->WaitForConnection();
   worldPublisher->Publish(controlMessage);
 
+  // keys to control robot
   const int key_left = 81;
   const int key_up = 82;
   const int key_down = 84;
   const int key_right = 83;
   const int key_esc = 27;
 
+  // set speed and direction for the robot
   float speed = 0.0;
   float dir = 0.0;
 
+  // Create an object for marble detection
   MarbleDetection marble;
-
-  double test = marble.getMarbleDistance();
-
-  std::cout << test << std::endl;
 
 
   // Loop
@@ -250,10 +271,12 @@ int main(int _argc, char **_argv) {
 
     int key = cv::waitKey(1);
 
+    // if "q" pressed - terminate program
     if (key == key_esc){
       break;
     }
 
+    // robot controller with arrow keys
     if ((key == key_up) && (speed <= 1.2f))
       speed += 0.05;
     else if ((key == key_down) && (speed >= -1.2f))
@@ -267,6 +290,7 @@ int main(int _argc, char **_argv) {
       //      speed *= 0.1;
       //      dir *= 0.1;
     }
+
 
     // Generate a pose
     ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));

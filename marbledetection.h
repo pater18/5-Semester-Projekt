@@ -18,13 +18,11 @@ class MarbleDetection
 {
 public:
     MarbleDetection();
+
+    std::pair<int, int> getMarbleXY(){return marbleXY;}
     double getMarbleAngle(){return marbleAngle;}
     double getMarbleDistance(){return marbleDistance;}
-    std::pair<int, int> getMarbleXY(){return marbleXY;}
     bool isMarbleDetected(){return !circles.empty();}
-
-    void detectMarbles();
-    void cameraCallback(ConstImageStampedPtr &msg);
 
 private:
     std::pair<int, int> marbleXY;
@@ -37,7 +35,9 @@ private:
     gazebo::transport::PublisherPtr pub;
     gazebo::transport::SubscriberPtr sub;
 
-    void houghDetection(const cv::Mat &gray, const cv::Mat &display, int cannyValue, int accumulatorValue);
+    void detectMarbles();
+    void cameraCallback(ConstImageStampedPtr &msg);
+    void houghDetection(const cv::Mat &gray, const cv::Mat &imgOutput, int cannyValue, int accumulatorValue);
 };
 
 #endif // MARBLEDETECTION_H
