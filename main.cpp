@@ -142,23 +142,27 @@ int main()
         std::cout << "next line "<< std::endl;
     }
 
+    const double divider = 255 / 15; // 15 is choosen because it is the highest value in the grid
 
-//    cv::Mat Brushfire (cv::Size(image),);
-//    Brushfire.resize(y,x);
-//    for (size_t j = 0; j < brushValues.size(); j++){
-//        for (size_t i = 0; i < brushValues[j].size(); i++){
-//            Brushfire.at<cv::Vec2b>(j, i) = black ;
-//        }
-//        std::cout << "next line "<< std::endl;
-//    }
+    // Create a grayscale image of the brushfire algoritme
+    cv::Mat Brushfire (image.rows, image.cols, CV_8UC1);
+    for (size_t j = 0; j < brushValues.size(); j++){
+        for (size_t i = 0; i < brushValues[j].size(); i++){
+            Brushfire.at<uchar>(j, i) = divider * brushValues[j][i];
+        }
+    }
 
 
+    cv::Mat BigBrush;
+    cv::Size size(300, 300);
 
+    cv::resize(Brushfire, BigBrush, size);
     std::cout << std::endl;
 
     cv::namedWindow("Brushfire");
 
-    cv::imshow("Brushfire", image);
+    cv::imshow("Brushfire", BigBrush);
+    cv::imwrite("brusfire.png", Brushfire);
     cv::waitKey(0);
     return 0;
 }
