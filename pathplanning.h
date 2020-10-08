@@ -16,12 +16,16 @@
 class pathPlanning
 {
 public:
-    pathPlanning();
+    pathPlanning(std::string ImageIn);
+    void brushfire();
+
 
 private:
     int black = 0;
     int white = 255;
     std::vector<std::vector<int>> brushValues;
+    cv::Mat imageOrg;
+    void non_maxima_suppression(const cv::Mat& image, cv::Mat& mask, bool remove_plateaus);
 
 };
 
