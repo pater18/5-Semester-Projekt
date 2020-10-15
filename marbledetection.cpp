@@ -11,7 +11,6 @@ void MarbleDetection::runMarbleDetection(){
 
 void MarbleDetection::cameraCallback(ConstImageStampedPtr &msg) {
 
-    mutex.lock();
 
     static bool isInitialized;
     if(!isInitialized){
@@ -34,6 +33,8 @@ void MarbleDetection::cameraCallback(ConstImageStampedPtr &msg) {
     // Detect the marbles
     houghDetection(img, im, 20, 20);
 
+
+    mutex.lock();
     //Display the image with marble detections
     cv::imshow("Camera Marble Detection", im);
     cv::moveWindow("Camera Marble Detection", 1500, 20);

@@ -7,12 +7,21 @@ void lidarSensor::runLidarSensor(){
     gazebo::transport::NodePtr nodeLidar(new gazebo::transport::Node());
     nodeLidar->Init();
     subLidar = nodeLidar->Subscribe("~/pioneer2dx/hokuyo/link/laser/scan", &lidarSensor::lidarCallback, this);
+
+}
+
+
+void lidarSensor::setMinRanges(){
+
+    minRanges = {*min_element(rightRanges.begin(), rightRanges.end()), *min_element(frontRanges.begin(), frontRanges.end()), *min_element(leftRanges.begin(), leftRanges.end())};
+    rightRanges.clear();
+    frontRanges.clear();
+    leftRanges.clear();
 }
 
 
 void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
 
-    mutex.lock();
 
     static bool initialized;
     if(!initialized){
@@ -48,18 +57,21 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
     // go through all the lidar points - get distance - draw points and lines for displaying lidar data
     for (int i = 0; i < rightRange; i++) {
     // angle for the lidar point
-    float angle = angle_min + i * angle_increment;
-    // distance from robot to where the lidar point hit an obstacle
-    float range = std::min(float(msg->scan().ranges(i)), range_max);
-    //    double intensity = msg->scan().intensities(i);
-    if(range <= obstacleCollisionThreshold){
-        cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
-                            200.5f - range_min * px_per_m * std::sin(angle));
-        cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
-                          200.5f - range * px_per_m * std::sin(angle));
-        cv::line(im, startpt * 16, endpt * 16, cv::Scalar(0, 255, 0, 255), 1,
-                 cv::LINE_AA, 4);
-    }
+        float angle = angle_min + i * angle_increment;
+        // distance from robot to where the lidar point hit an obstacle
+        float range = std::min(float(msg->scan().ranges(i)), range_max);
+        //    double intensity = msg->scan().intensities(i);
+        rightRanges.push_back(range);
+        rangesTest.push_back(range);
+
+        if(range <= obstacleCollisionThreshold){
+            cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
+                                200.5f - range_min * px_per_m * std::sin(angle));
+            cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
+                              200.5f - range * px_per_m * std::sin(angle));
+            cv::line(im, startpt * 16, endpt * 16, cv::Scalar(0, 255, 0, 255), 1,
+                     cv::LINE_AA, 4);
+        }
     }
 
     int key = cv::waitKey(1);
@@ -67,41 +79,48 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
     std::vector<float> rangesTest;
     // FRONT LIDAR RANGE
     for (int i = rightRange; i < frontRange; i++) {
-    // angle for the lidar point
-    float angle = angle_min + i * angle_increment;
-    // distance from robot to where the lidar point hit an obstacle
-    float range = std::min(float(msg->scan().ranges(i)), range_max);
+        // angle for the lidar point
+        float angle = angle_min + i * angle_increment;
+        // distance from robot to where the lidar point hit an obstacle
+        float range = std::min(float(msg->scan().ranges(i)), range_max);
 
-    if(key == 'p'){
+        frontRanges.push_back(range);
+        rangesTest.push_back(range);
 
-        std::cout << "Range: " << range << std::endl;
-    }
+        if(key == 'p'){
 
-    //    double intensity = msg->scan().intensities(i);
-    cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
-                        200.5f - range_min * px_per_m * std::sin(angle));
-    cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
-                      200.5f - range * px_per_m * std::sin(angle));
-    cv::line(im, startpt * 16, endpt * 16, cv::Scalar(0, 255, 0, 255), 1,
-             cv::LINE_AA, 4);
+            std::cout << "Range: " << range << std::endl;
+        }
 
-    }
-
-    //LEFT LIDAR RANGE
-    for (int i = frontRange; i < leftRange; i++) {
-    // angle for the lidar point
-    float angle = angle_min + i * angle_increment;
-    // distance from robot to where the lidar point hit an obstacle
-    float range = std::min(float(msg->scan().ranges(i)), range_max);
-    //    double intensity = msg->scan().intensities(i);
-    if(range <= obstacleCollisionThreshold){
+        //    double intensity = msg->scan().intensities(i);
         cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
                             200.5f - range_min * px_per_m * std::sin(angle));
         cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
                           200.5f - range * px_per_m * std::sin(angle));
         cv::line(im, startpt * 16, endpt * 16, cv::Scalar(0, 255, 0, 255), 1,
                  cv::LINE_AA, 4);
+
     }
+
+    //LEFT LIDAR RANGE
+    for (int i = frontRange; i < leftRange; i++) {
+        // angle for the lidar point
+        float angle = angle_min + i * angle_increment;
+        // distance from robot to where the lidar point hit an obstacle
+        float range = std::min(float(msg->scan().ranges(i)), range_max);
+        //    double intensity = msg->scan().intensities(i);
+
+        leftRanges.push_back(range);
+        rangesTest.push_back(range);
+
+        if(range <= obstacleCollisionThreshold){
+            cv::Point2f startpt(200.5f + range_min * px_per_m * std::cos(angle),
+                                200.5f - range_min * px_per_m * std::sin(angle));
+            cv::Point2f endpt(200.5f + range * px_per_m * std::cos(angle),
+                              200.5f - range * px_per_m * std::sin(angle));
+            cv::line(im, startpt * 16, endpt * 16, cv::Scalar(0, 255, 0, 255), 1,
+                     cv::LINE_AA, 4);
+        }
     }
 
     cv::circle(im, cv::Point(200, 200), 2, cv::Scalar(0, 0, 255));
@@ -109,10 +128,13 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
               cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1.0,
               cv::Scalar(255, 0, 0));
 
+    setMinRanges();
 
+
+    mutex.lock();
     // Show the lidar data
-    //cv::moveWindow("Lidar", 1500, 350);
-    //cv::imshow("Lidar", im);
+    cv::moveWindow("Lidar", 1500, 350);
+    cv::imshow("Lidar", im);
     mutex.unlock();
 }
 

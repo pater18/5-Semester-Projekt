@@ -22,7 +22,16 @@ public:
 
     void runLidarSensor();
 
+    std::tuple<float, float, float> getMinRanges() {return minRanges;}
+    void setMinRanges();
+
+    std::vector<float> get_ranges(){return rangesTest;}
+
+
 private:
+
+    std::tuple<float, float, float> minRanges;
+
 
     const int rightRange = 95, frontRange = 105, leftRange = 200;
 
@@ -31,7 +40,12 @@ private:
     float closestObjectFront = 0;
     float closestObjectRight = 0;
 
-    float obstacleCollisionThreshold = 1;
+    std::vector<float> rightRanges;
+    std::vector<float> frontRanges;
+    std::vector<float> leftRanges;
+
+    std::vector<float> rangesTest;
+
 
     void lidarCallback(ConstLaserScanStampedPtr &msg);
 

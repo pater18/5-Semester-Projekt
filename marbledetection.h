@@ -25,6 +25,8 @@ public:
     double getMarbleDistance(){return marbleDistance;}
     bool isMarbleDetected(){return !circles.empty();}
 
+
+
 private:
     std::pair<int, int> marbleXY;
     double marbleAngleHorizontal = 0;
