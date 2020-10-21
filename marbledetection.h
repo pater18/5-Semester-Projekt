@@ -11,6 +11,9 @@
 
 #include <bits/stdc++.h>
 
+#include "lidarsensor.h"
+
+
 extern boost::mutex mutex;
 
 class MarbleDetection
@@ -25,16 +28,24 @@ public:
     double getMarbleDistance(){return marbleDistance;}
     bool isMarbleDetected(){return !circles.empty();}
 
-
+    // Get distance form lidar object
+    void distanceToMarbleOld(lidarSensor *lidar);
+    // Get disstance in main
+    void distanceToMarble(float distFront);
 
 private:
+
     std::pair<int, int> marbleXY;
+
     double marbleAngleHorizontal = 0;
     double marbleDistance = 0;
+    double marbleDistanceCamera = 0;
+
     bool marbleDetected = false;
     std::vector<cv::Vec3f> circles;
 
     int oldRadius = 0;
+
 
     gazebo::transport::Node nodeCamera;
     gazebo::transport::SubscriberPtr subCamera;
@@ -44,7 +55,8 @@ private:
     void cameraCallback(ConstImageStampedPtr &msg);
     void houghDetection(const cv::Mat &gray, const cv::Mat &imgOutput, int cannyValue, int accumulatorValue);
     void calculateAngleToMarble(std::vector<cv::Vec3f> circles, int closestCircleDetected);
-    void calculateDistanceToMarble(std::vector<double> distances, std::vector<double> radius);
+    void calculateDistanceToMarbleFromCamera(int radiusClosest);
+
 };
 
 #endif // MARBLEDETECTION_H

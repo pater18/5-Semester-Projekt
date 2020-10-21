@@ -22,16 +22,19 @@ public:
 
     void runLidarSensor();
 
-    std::tuple<float, float, float> getMinRanges() {return minRanges;}
+    std::tuple<float, float, float> getMinRanges() { return minRanges; }
     void setMinRanges();
 
-    std::vector<float> get_ranges(){return rangesTest;}
+    std::vector<float> get_ranges(){ return rangesTest; }
+
+    float getClosestObjectFront(){ return closestObjectFront; }
 
 
 private:
 
     std::tuple<float, float, float> minRanges;
 
+    float obstacleCollisionThreshold = 10;
 
     const int rightRange = 95, frontRange = 105, leftRange = 200;
 

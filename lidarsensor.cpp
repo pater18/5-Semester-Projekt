@@ -13,7 +13,11 @@ void lidarSensor::runLidarSensor(){
 
 void lidarSensor::setMinRanges(){
 
-    minRanges = {*min_element(rightRanges.begin(), rightRanges.end()), *min_element(frontRanges.begin(), frontRanges.end()), *min_element(leftRanges.begin(), leftRanges.end())};
+    closestObjectLeft = *min_element(leftRanges.begin(), leftRanges.end());
+    closestObjectFront = *min_element(frontRanges.begin(), frontRanges.end());
+    closestObjectRight = *min_element(rightRanges.begin(), rightRanges.end());;
+
+    minRanges = {closestObjectRight, closestObjectFront, closestObjectLeft};
     rightRanges.clear();
     frontRanges.clear();
     leftRanges.clear();
@@ -134,7 +138,7 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
     mutex.lock();
     // Show the lidar data
     cv::moveWindow("Lidar", 1500, 350);
-    cv::imshow("Lidar", im);
+    //cv::imshow("Lidar", im);
     mutex.unlock();
 }
 

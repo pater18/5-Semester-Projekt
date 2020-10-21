@@ -9,22 +9,31 @@ using namespace fl;
 
 class fuzzyController
 {
+
 public:
+
     fuzzyController();
 
     void setupFuzzyController();
-    void runFuzzyController();
+    void runFuzzyController(float distFront, float distLeft, float distRight);
 
-    double getOutputDirection(){ return mSteer->getValue(); }
+    double getOutputDirection(){ return dir->getValue(); }
+    double getOutputVelocity(){ return vel->getValue(); }
 
 private:
 
-    double outputDirection;
+    double outputDirection = 0;
+    double outputVelocity = 0;
 
     Engine* engine = new Engine;
 
-    InputVariable* obstacle = new InputVariable;
-    OutputVariable* mSteer = new OutputVariable;
+    InputVariable* disF = new InputVariable;
+    InputVariable* disL = new InputVariable;
+    InputVariable* disR = new InputVariable;
+
+    OutputVariable* vel = new OutputVariable;
+    OutputVariable* dir = new OutputVariable;
+
     RuleBlock* mamdani = new RuleBlock;
 
 

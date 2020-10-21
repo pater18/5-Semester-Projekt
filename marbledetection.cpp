@@ -33,7 +33,6 @@ void MarbleDetection::cameraCallback(ConstImageStampedPtr &msg) {
     // Detect the marbles
     houghDetection(img, im, 20, 20);
 
-
     mutex.lock();
     //Display the image with marble detections
     cv::imshow("Camera Marble Detection", im);
@@ -54,6 +53,8 @@ void MarbleDetection::houghDetection(const cv::Mat &gray, const cv::Mat &imgOutp
     //Set if marble is detected
     marbleDetected = !circles.empty();
     int closestCircleDetected = 0;
+
+
 
     // Get radius and outline of circles detected - We are interested in the closest and largest circle
     if(marbleDetected)
@@ -90,9 +91,15 @@ void MarbleDetection::houghDetection(const cv::Mat &gray, const cv::Mat &imgOutp
         std::cout << "Radius: " << radiusClosest << std::endl;
         oldRadius = radiusClosest;
       }
+
+
+      // Distance to marble when detected
+      //calculateDistanceToMarbleFromCamera(radiusClosest);
+
     }
 
 }
+
 
 
 void MarbleDetection::calculateAngleToMarble(std::vector<cv::Vec3f> circles, int closestCircleDetected){
@@ -112,5 +119,30 @@ void MarbleDetection::calculateAngleToMarble(std::vector<cv::Vec3f> circles, int
     //std::cout << "Horizontal Angle: " << marbleAngleHorizontal << std::endl;
 
 
+}
+
+
+void MarbleDetection::calculateDistanceToMarbleFromCamera(int radiusClosest){
+
+    marbleDistance = -0.0663 * radiusClosest + 6.43;
+    std::cout << "distance: " << marbleDistance << std::endl;
+
+}
+
+
+void MarbleDetection::distanceToMarble(float distFront){
+
+    if(marbleDetected){
+        marbleDistance = distFront;
+        std::cout << "distance: " << marbleDistance << std::endl;
+    }
+}
+
+void MarbleDetection::distanceToMarbleOld(lidarSensor *lidar){
+
+    if(marbleDetected){
+        marbleDistance = lidar->getClosestObjectFront();
+        std::cout << "distance: " << marbleDistance << std::endl;
+    }
 }
 
