@@ -67,7 +67,7 @@ int main(int _argc, char **_argv) {
 
     // Create an object for marble detection
     MarbleDetection marble;
-    marble.runMarbleDetection();
+    //marble.runMarbleDetection();
 
 
 
@@ -156,11 +156,13 @@ int main(int _argc, char **_argv) {
           //      dir *= 0.1;
         }
 
+        std::cout << "speed: " << controller.getOutputVelocity() << std::endl;
+        std::cout << "dir: " << controller.getOutputDirection() << std::endl;
 
         // Generate a pose
         //ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
 
-        ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
+        ignition::math::Pose3d pose(double(0.2), 0, 0, 0, 0, double(controller.getOutputDirection()));
         // Convert to a pose message
         gazebo::msgs::Pose msg;
         gazebo::msgs::Set(&msg, pose);

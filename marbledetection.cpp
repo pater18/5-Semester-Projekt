@@ -35,7 +35,7 @@ void MarbleDetection::cameraCallback(ConstImageStampedPtr &msg) {
 
     mutex.lock();
     //Display the image with marble detections
-    cv::imshow("Camera Marble Detection", im);
+    //cv::imshow("Camera Marble Detection", im);
     cv::moveWindow("Camera Marble Detection", 1500, 20);
     mutex.unlock();
 
@@ -88,7 +88,7 @@ void MarbleDetection::houghDetection(const cv::Mat &gray, const cv::Mat &imgOutp
       int radiusClosest = circles[closestCircleDetected][2];
 
       if(radiusClosest > oldRadius){
-        std::cout << "Radius: " << radiusClosest << std::endl;
+        //std::cout << "Radius: " << radiusClosest << std::endl;
         oldRadius = radiusClosest;
       }
 
@@ -125,7 +125,7 @@ void MarbleDetection::calculateAngleToMarble(std::vector<cv::Vec3f> circles, int
 void MarbleDetection::calculateDistanceToMarbleFromCamera(int radiusClosest){
 
     marbleDistance = -0.0663 * radiusClosest + 6.43;
-    std::cout << "distance: " << marbleDistance << std::endl;
+    //std::cout << "distance: " << marbleDistance << std::endl;
 
 }
 
@@ -134,7 +134,7 @@ void MarbleDetection::distanceToMarble(float distFront){
 
     if(marbleDetected){
         marbleDistance = distFront;
-        std::cout << "distance: " << marbleDistance << std::endl;
+        //std::cout << "distance: " << marbleDistance << std::endl;
     }
 }
 
@@ -142,7 +142,7 @@ void MarbleDetection::distanceToMarbleOld(lidarSensor *lidar){
 
     if(marbleDetected){
         marbleDistance = lidar->getClosestObjectFront();
-        std::cout << "distance: " << marbleDistance << std::endl;
+        //std::cout << "distance: " << marbleDistance << std::endl;
     }
 }
 
