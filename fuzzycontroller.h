@@ -17,13 +17,13 @@ public:
     void setupFuzzyController();
     void runFuzzyController(float distFront, float distLeft, float distRight);
 
-    double getOutputDirection(){ return dir->getValue(); }
-    double getOutputVelocity(){ return vel->getValue(); }
+    double getOutputDirection(){ return double(dir->getValue()); }
+    double getOutputVelocity(){ return double(vel->getValue()); }
 
 private:
 
     double outputDirection = 0;
-    double outputVelocity = 0;
+    float outputVelocity = 0;
 
     Engine* engine = new Engine;
 

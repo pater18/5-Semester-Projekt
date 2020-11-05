@@ -43,11 +43,11 @@ private:
     float closestObjectFront = 0;
     float closestObjectRight = 0;
 
-    std::vector<float> rightRanges;
-    std::vector<float> frontRanges;
-    std::vector<float> leftRanges;
+    std::vector<float> rightRanges = {};
+    std::vector<float> frontRanges = {};
+    std::vector<float> leftRanges = {};
 
-    std::vector<float> rangesTest;
+    std::vector<float> rangesTest = {};
 
 
     void lidarCallback(ConstLaserScanStampedPtr &msg);

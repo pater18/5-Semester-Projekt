@@ -31,7 +31,7 @@ void MarbleDetection::cameraCallback(ConstImageStampedPtr &msg) {
     //cv::fastNlMeansDenoising(img, img, 3);
 
     // Detect the marbles
-    houghDetection(img, im, 20, 20);
+    //houghDetection(img, im, 20, 20);
 
     mutex.lock();
     //Display the image with marble detections

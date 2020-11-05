@@ -42,7 +42,7 @@ private:
     double marbleDistanceCamera = 0;
 
     bool marbleDetected = false;
-    std::vector<cv::Vec3f> circles;
+    std::vector<cv::Vec3f> circles = {};
 
     int oldRadius = 0;
 

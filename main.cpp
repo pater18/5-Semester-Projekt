@@ -1,5 +1,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <typeinfo>
 
 #include "marbledetection.h"
 #include "lidarsensor.h"
@@ -64,6 +65,10 @@ int main(int _argc, char **_argv) {
     worldPublisher->Publish(controlMessage);
 
 
+    std::tuple<float,float,float> ranges;
+    float distRight = 10;
+    float distFront = 10;
+    float distLeft = 10;
 
     // Create an object for marble detection
     MarbleDetection marble;
@@ -78,11 +83,6 @@ int main(int _argc, char **_argv) {
     fuzzyController controller;
     controller.setupFuzzyController();
 
-
-    std::tuple<float,float,float> ranges;
-    float distRight = 0;
-    float distFront = 0;
-    float distLeft = 0;
 
 
 //    for (int i = 0; i <= 50; ++i){
@@ -102,7 +102,10 @@ int main(int _argc, char **_argv) {
 
     // set speed and direction for the robot
     float speed = 0.0;
-    float dir = 0.0;
+    double dir = 0.0;
+
+    double controllerDirection = 0.0;
+    bool poseInit = false;
 
     // Infinite Loop
     while (true) {
@@ -114,9 +117,11 @@ int main(int _argc, char **_argv) {
         distFront = std::get<1>(ranges);
         distLeft = std::get<2>(ranges);
 
-//        std::cout << "right: " << distRight << std::endl;
-//        std::cout << "front: " << distFront << std::endl;
-//        std::cout << "left: " << distLeft << std::endl;
+
+
+        std::cout << "right: " << distRight << std::endl;
+        std::cout << "front: " << distFront << std::endl;
+        std::cout << "left: " << distLeft << std::endl;
 
 
         // Distance to marble
@@ -124,9 +129,9 @@ int main(int _argc, char **_argv) {
         marble.distanceToMarble(distFront);
 
         // Run fuzzy controller
-        controller.runFuzzyController(distFront, distLeft, distRight);
-
-
+        if(distRight < 10.0 || distFront < 10.0 || distLeft < 10.0){
+            controller.runFuzzyController(distFront, distLeft, distRight);
+        }
 
         gazebo::common::Time::MSleep(10);
 
@@ -139,7 +144,9 @@ int main(int _argc, char **_argv) {
 
         if(key == 's'){
             speed = 0;
+            dir = 0;
         }
+
 
         // robot controller with arrow keys
         if ((key == key_up) && (speed <= 1.2f))
@@ -153,20 +160,45 @@ int main(int _argc, char **_argv) {
         else {
           // slow down
           //      speed *= 0.1;
-          //      dir *= 0.1;
+               //dir *= 0.1;
         }
 
-        std::cout << "speed: " << controller.getOutputVelocity() << std::endl;
-        std::cout << "dir: " << controller.getOutputDirection() << std::endl;
+        // robot controller with arrow keys
+//        if (key == key_up){
+
+//            speed += 0.05;
+//            std::cout << "speed increased" << std::endl;
+//        }
+
+        std::cout << "Speed: " << speed << std::endl;
+        std::cout << "Dir: " << dir << std::endl;
+
+        if(key == 'b' || speed != 0){
+            speed = controller.getOutputVelocity();
+
+        }
+
+        if((distRight < 10.0 && distRight != 0) || (distFront <= 10.0 && distFront != 0) || (distLeft < 10.0 && distLeft != 0)){
+            dir = controller.getOutputDirection();
+        }
+
 
         // Generate a pose
         //ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
 
-        ignition::math::Pose3d pose(double(0.2), 0, 0, 0, 0, double(controller.getOutputDirection()));
+        //speed = double(controller.getOutputVelocity()->getValue());
+
+       // std::cout << "speed: " << speed << std::endl;
+        //std::cout << "dir: " << dir << std::endl;
+
+
+        ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
         // Convert to a pose message
         gazebo::msgs::Pose msg;
         gazebo::msgs::Set(&msg, pose);
         movementPublisher->Publish(msg);
+
+
     }
 
     // Make sure to shut everything down.
