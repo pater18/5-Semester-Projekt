@@ -3,8 +3,11 @@
 
 #include "landmarks.h"
 
+#include <opencv2/opencv.hpp>
+
 #include <iostream>
 #include <vector>
+#include <random>
 
 struct Particle {
 
@@ -16,6 +19,8 @@ struct Particle {
     std::vector<double> associations;
     std::vector<double> sense_x;
     std::vector<double> sense_y;
+
+    double lidar[200];
 
 };
 
@@ -30,6 +35,14 @@ public:
 
     std::vector<Particle> particles;
 
+    void drawParticles(cv::Mat &map);
+
+    void drawLidarData(cv::Mat &map);
+
+    void lidarParticles(cv::Mat &map);
+
+    void drawLidarParticles(cv::Mat &map);
+
 
     bool particleFilterInitialized(){ return particleFilterInit; }
     std::vector<double> getParticleWeights(){ return weights; }
@@ -38,7 +51,7 @@ public:
     void runParticleFilter(int map);
 
     // Function for particle filter
-    void initializeParticleFilter(double x, double y, double orientation, double std[]);
+    void initializeParticleFilter(double x, double y, double orientation, double std[], cv::Mat &map);
 
     void prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate);
 
@@ -58,6 +71,18 @@ public:
 
 
 private:
+
+
+    // True random numbers
+    std::random_device rd;
+    // Pseudo random numbers
+    std::default_random_engine dre;
+
+
+    double lidarMaxRange = 10.0;
+    double lidarFov = 270.0;
+    double noPoints = 200.0;
+    double angle_increment = (lidarFov / noPoints) * (3.14 / 180.0);
 
     int numberOfParticles = 0;
     bool particleFilterInit = false;
