@@ -53,7 +53,7 @@ void ParticleFilter::lidarParticles(cv::Mat &map){
           cv::LineIterator lineIt(map, particlePoint, endPoint);
 
           for(int j = 0; j < lineIt.count; j++, ++lineIt){
-              if(map.at<cv::Vec3b>(lineIt.pos())[0] != 255 && map.at<cv::Vec3b>(lineIt.pos())[1] != 255){
+              if(map.at<cv::Vec3b>(lineIt.pos())[0] == 0 && map.at<cv::Vec3b>(lineIt.pos())[1] == 0){
                   particles[par].lidar[point] = cv::norm(particlePoint - lineIt.pos());
                   break;
               } else {
@@ -69,8 +69,56 @@ void ParticleFilter::lidarParticles(cv::Mat &map){
 }
 
 
-void ParticleFilter::drawLidarParticles(cv::Mat &map){
+void ParticleFilter::robotLidar(Particle &robot, cv::Mat &map){
 
+
+    for(int point = 0; point < noPoints; point++) {
+      // angle for the lidar point
+      float angle = robot.orientation * (3.14 / 180.0) - 100 * angle_increment + point * angle_increment;
+
+      //float angle = i * angle_increment;
+
+      cv::Point2f endPoint(robot.x + lidarMaxRange * std::cos(angle), robot.y + lidarMaxRange * std::sin(angle));
+
+      cv::Point particlePoint = {robot.x, robot.y};
+
+      cv::LineIterator lineIt(map, particlePoint, endPoint);
+
+      for(int j = 0; j < lineIt.count; j++, ++lineIt){
+          if(map.at<cv::Vec3b>(lineIt.pos())[0] == 0 && map.at<cv::Vec3b>(lineIt.pos())[1] == 0){
+              robot.lidar[point] = cv::norm(particlePoint - lineIt.pos());
+              break;
+          } else {
+               robot.lidar[point] = lidarMaxRange;
+          }
+      }
+
+     //cv::line(map, cv::Point2f(particles[par].x, particles[par].y), endPoint, cv::Scalar(0,0,255));
+
+    }
+}
+
+
+void ParticleFilter::drawRobotParticle(Particle &robot, cv::Mat &map){
+
+    cv::circle(map, cv::Point(robot.x, robot.y), 1, cv::Scalar(255,0,0));
+
+    for(int point = 0; point < noPoints; point++){
+
+        float angle = robot.orientation * (3.14 / 180.0) - 100 * angle_increment + point * angle_increment;;
+
+        cv::Point2f endPoint(robot.x + robot.lidar[point] * std::cos(angle), robot.y + robot.lidar[point] * std::sin(angle));
+
+        cv::line(map, cv::Point2f(robot.x, robot.y), endPoint, cv::Scalar(255,0,0));
+
+    }
+
+
+}
+
+
+
+void ParticleFilter::drawLidarParticles(cv::Mat &map){
 
     for(int par = 0; par < particles.size(); par++){
         for(int point = 0; point < noPoints; point++){
@@ -79,14 +127,11 @@ void ParticleFilter::drawLidarParticles(cv::Mat &map){
 
             cv::Point2f endPoint(particles[par].x + particles[par].lidar[point] * std::cos(angle), particles[par].y + particles[par].lidar[point] * std::sin(angle));
 
-            cv::line(map, cv::Point2f(particles[par].x, particles[par].y), endPoint, cv::Scalar(0,0,255));
+            cv::line(map, cv::Point2f(particles[par].x, particles[par].y), endPoint, cv::Scalar(0,255,0));
 
         }
     }
-
 }
-
-
 
 
 void ParticleFilter::drawParticles(cv::Mat &map){
@@ -96,15 +141,6 @@ void ParticleFilter::drawParticles(cv::Mat &map){
     }
 }
 
-
-void ParticleFilter::drawLidarData(cv::Mat &map){
-
-    double lidarMaxRange = 10.0;
-    double lidarFov = 270.0;
-    double noPoints = 200.0;
-    double angle_increment = (lidarFov / noPoints) * (3.14 / 180.0);
-
-}
 
 
 // orientation_rate = delta direction / delta time step - updates somewhere else
@@ -117,10 +153,23 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         double y = particle.y;
         double orien = particle.orientation;
 
+        std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
+
         // Odometry
-        x = x + (velocity / orientation_rate) * ( sin(orien + delta_timestep * orientation_rate) - sin(orien) );
-        y = y + (velocity / orientation_rate) * ( cos(orien) - cos(orien + delta_timestep * orientation_rate) );
-        orien = orien + delta_timestep * orientation_rate;
+
+        if(orientation_rate == 0){
+            x += velocity * delta_timestep * std::cos(orien);
+            y += velocity * delta_timestep * std::sin(orien);
+        } else {
+            x += (velocity / orientation_rate) * ( sin(orien + delta_timestep * orientation_rate) - sin(orien) );
+            y += (velocity / orientation_rate) * ( cos(orien) - cos(orien + delta_timestep * orientation_rate) );
+            orien += delta_timestep * orientation_rate;
+        }
+
+        std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
+//        particle.x = x;
+//        particle.y = y;
+//        particle.orientation = orien;
 
         // Noise from odometry
         std::normal_distribution<double> noise_x(x, stdPos);
@@ -131,7 +180,40 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         particle.y = noise_y(rd);
         particle.orientation = noise_orien(rd);
 
+        std::cout << "x2: " << x << " y2: "<< y << " orien2: " << orien << std::endl;
+
     }
+}
+
+void ParticleFilter::associateParticlesWithRobot(Particle &robot){
+
+    double stddiv = 5.0;
+    double a = (1 / (stddiv * std::sqrt(2*CV_PI)));
+
+    int i = 0;
+    for(auto &particle : particles){
+
+        for(int point = 0; point < noPoints; point++){
+
+            if(particle.lidar[point] == 0){
+                particle.weight = 0;
+            } else {
+                particle.weight += a * std::exp(-(std::pow(particle.lidar[point] - robot.lidar[point], 2) / (2 * std::pow(stddiv, 2))));
+            }
+
+        }
+
+        weights[i] = particle.weight;
+
+        i++;
+    }
+
+    //normalizeWeights(weights);
+
+    for(auto &we : weights){
+        std::cout <<"weight: " << we << std::endl;
+    }
+
 }
 
 
@@ -155,6 +237,32 @@ void ParticleFilter::associateData(const std::vector<LandmarkObservation>& predi
 }
 
 
+void ParticleFilter::normalizeWeights(std::vector<double> &weights){
+
+    double maxElement = *std::max_element(weights.begin(), weights.end());
+    double minElement = *std::min_element(weights.begin(), weights.end());
+
+
+    double sumOfWeights = 0.0;
+
+    for(auto &weight : weights){
+        if(weight != 0){
+            sumOfWeights += weight;
+        }
+    }
+
+    for(int i = 0; i < weights.size(); i++){
+
+       weights[i] = (weights[i] - minElement) / (maxElement - minElement);
+//       if(sumOfWeights != 0){
+//            weights[i] /= sumOfWeights;
+//       }
+
+    }
+
+}
+
+
 void ParticleFilter::updateWeights(double lidar_range, double stdLandmark[], const std::vector<LandmarkObservation> &observations, const Map &map_landmarks){
 
     for(auto &p : particles){
@@ -171,14 +279,6 @@ void ParticleFilter::updateWeights(double lidar_range, double stdLandmark[], con
 
 
         // 3. Update the weights
-
-
-
-
-
-
-
-
 
     }
 

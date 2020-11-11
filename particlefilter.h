@@ -43,6 +43,12 @@ public:
 
     void drawLidarParticles(cv::Mat &map);
 
+    void robotLidar(Particle &robot, cv::Mat &map);
+
+    void drawRobotParticle(Particle &robot, cv::Mat &map);
+
+    void drawLidarRobot(Particle &robot, cv::Mat &map);
+
 
     bool particleFilterInitialized(){ return particleFilterInit; }
     std::vector<double> getParticleWeights(){ return weights; }
@@ -56,6 +62,10 @@ public:
     void prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate);
 
     void associateData(const std::vector<LandmarkObservation> &predicted, std::vector<LandmarkObservation> &observations);
+
+    void associateParticlesWithRobot(Particle &robot);
+
+    void normalizeWeights(std::vector<double> &weights);
 
     void updateWeights(double lidar_range, double stdLandmark[], const std::vector<LandmarkObservation> &observations, const Map &map_landmarks);
 
@@ -88,6 +98,7 @@ private:
     bool particleFilterInit = false;
 
     std::vector<double> weights;
+    std::vector<double> normalizedWeights;
 
 };
 
