@@ -101,7 +101,9 @@ void ParticleFilter::robotLidar(Particle &robot, cv::Mat &map){
 
 void ParticleFilter::drawRobotParticle(Particle &robot, cv::Mat &map){
 
-    cv::circle(map, cv::Point(robot.x, robot.y), 1, cv::Scalar(255,0,0));
+    //std::cout << "x2: " << robot.x << " y2: "<< robot.y << " orien2: " << robot.orientation << std::endl;
+
+    cv::circle(map, cv::Point(robot.x, robot.y), 1, cv::Scalar(0,0,255));
 
     for(int point = 0; point < noPoints; point++){
 
@@ -115,8 +117,6 @@ void ParticleFilter::drawRobotParticle(Particle &robot, cv::Mat &map){
 
 
 }
-
-
 
 void ParticleFilter::drawLidarParticles(cv::Mat &map){
 
@@ -144,7 +144,7 @@ void ParticleFilter::drawParticles(cv::Mat &map){
 
 
 // orientation_rate = delta direction / delta time step - updates somewhere else
-void ParticleFilter::prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate){
+void ParticleFilter::prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate, Particle robot){
 
 
     for(auto &particle : particles){
@@ -153,7 +153,7 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         double y = particle.y;
         double orien = particle.orientation;
 
-        std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
+        //std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
 
         // Odometry
 
@@ -166,28 +166,70 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
             orien += delta_timestep * orientation_rate;
         }
 
-        std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
-//        particle.x = x;
-//        particle.y = y;
-//        particle.orientation = orien;
+       // std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
+        particle.x = x;
+        particle.y = y;
+        particle.orientation = orien;
 
-        // Noise from odometry
-        std::normal_distribution<double> noise_x(x, stdPos);
-        std::normal_distribution<double> noise_y(y, stdPos);
-        std::normal_distribution<double> noise_orien(orien, stdPos);
+//        // Noise from odometry
+//        std::normal_distribution<double> noise_x(x, stdPos);
+//        std::normal_distribution<double> noise_y(y, stdPos);
+//        std::normal_distribution<double> noise_orien(orien, stdPos);
 
-        particle.x = noise_x(rd);
-        particle.y = noise_y(rd);
-        particle.orientation = noise_orien(rd);
+//        particle.x = noise_x(rd);
+//        particle.y = noise_y(rd);
+//        particle.orientation = noise_orien(rd);
 
-        std::cout << "x2: " << x << " y2: "<< y << " orien2: " << orien << std::endl;
+//        robot.x = noise_x(rd);
+//        robot.y = noise_y(rd);
+//        robot.orientation = noise_orien(rd);
+
+        //std::cout << "x2: " << x << " y2: "<< y << " orien2: " << orien << std::endl;
 
     }
 }
 
+void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velocity, double orientation_rate, Particle &robot){
+
+    double x = robot.x;
+    double y = robot.y;
+    double orien = robot.orientation;
+
+    //std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
+
+    // Odometry
+
+    if(orientation_rate == 0){
+        x += velocity * delta_timestep * std::cos(orien);
+        y += velocity * delta_timestep * std::sin(orien);
+    } else {
+        x += (velocity / orientation_rate) * ( sin(orien + delta_timestep * orientation_rate) - sin(orien) );
+        y += (velocity / orientation_rate) * ( cos(orien) - cos(orien + delta_timestep * orientation_rate) );
+        orien += delta_timestep * orientation_rate;
+    }
+
+    //std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
+
+
+    robot.x = x;
+    robot.y = y;
+    robot.orientation = orien;
+
+
+//    // Noise from odometry
+//    std::normal_distribution<double> noise_x(x, stdPos);
+//    std::normal_distribution<double> noise_y(y, stdPos);
+//    std::normal_distribution<double> noise_orien(orien, stdPos);
+
+//    robot.x = noise_x(rd);
+//    robot.y = noise_y(rd);
+//    robot.orientation = noise_orien(rd);
+
+}
+
 void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 
-    double stddiv = 5.0;
+    double stddiv = 2.0;
     double a = (1 / (stddiv * std::sqrt(2*CV_PI)));
 
     int i = 0;
@@ -205,13 +247,15 @@ void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 
         weights[i] = particle.weight;
 
+        particle.weight = 0.0;
+
         i++;
     }
 
     //normalizeWeights(weights);
 
     for(auto &we : weights){
-        std::cout <<"weight: " << we << std::endl;
+       // std::cout <<"weight: " << we << std::endl;
     }
 
 }
@@ -253,10 +297,10 @@ void ParticleFilter::normalizeWeights(std::vector<double> &weights){
 
     for(int i = 0; i < weights.size(); i++){
 
-       weights[i] = (weights[i] - minElement) / (maxElement - minElement);
-//       if(sumOfWeights != 0){
-//            weights[i] /= sumOfWeights;
-//       }
+       //weights[i] = (weights[i] - minElement) / (maxElement - minElement);
+       if(sumOfWeights != 0){
+            weights[i] /= sumOfWeights;
+       }
 
     }
 
@@ -287,7 +331,7 @@ void ParticleFilter::updateWeights(double lidar_range, double stdLandmark[], con
 
 
 
-void ParticleFilter::resampleParticles(){
+void ParticleFilter::resampleParticles(int numberOfResample, double stddivPosition){
 
     std::discrete_distribution<int> resampleDist(weights.begin(), weights.end());
 
@@ -296,6 +340,60 @@ void ParticleFilter::resampleParticles(){
         particles[i] = particles[resampleDist(rd)];
     }
 
+//    std::cout << "size of particles: " << particles.size() << std::endl;
+
+//    double mean_x = 0.0;
+//    double mean_y = 0.0;
+//    double mean_orien = 0.0;
+
+//    std::vector<double> x_inter;
+//    std::vector<double> y_inter;
+//    std::vector<double> orien_inter;
+//    std::vector<double> weightsDist;
+
+//    double sumX, sumY, sumOrien = 0.0;
+//    for(auto &particle : particles){
+//        sumX += particle.x;
+//        sumY += particle.y;
+//        sumOrien += particle.orientation;
+
+//        x_inter.push_back(particle.x);
+//        y_inter.push_back(particle.y);
+//        orien_inter.push_back(particle.orientation);
+
+//        weightsDist.push_back(particle.weight);
+
+//    }
+
+//    mean_x = sumX / particles.size();
+//    mean_y = sumY / particles.size();
+//    mean_orien = sumOrien / particles.size();
+
+
+////    piecewise_constant_distribution<double> resample_x(x_inter.begin(), x_inter.end(), particles.weights.begin());
+////    piecewise_constant_distribution<double> resample_y(particles.y.begin(), particles.y.end(), particles.weights.begin());
+////    piecewise_constant_distribution<double> resample_orien(particles.orientation.begin(), particles.orientation.end(), particles.weights.begin());
+
+//    std::normal_distribution<double> resample_x(mean_x, stddivPosition);
+//    std::normal_distribution<double> resample_y(mean_y, stddivPosition);
+//    std::normal_distribution<double> resample_orien(mean_orien, stddivPosition);
+
+//    weights.clear();
+//    particles.clear();
+
+//    for(int i = 0; i < numberOfResample; i++){
+
+//        Particle particle;
+//        particle.x = resample_x(rd);
+//        particle.y = resample_y(rd);
+//        particle.orientation = resample_orien(rd);
+//        particle.id = i;
+//        particle.weight = 1.0;
+//        weights.push_back(particle.weight);
+
+//        particles.push_back(particle);
+
+//    }
 }
 
 
