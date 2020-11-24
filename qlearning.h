@@ -8,6 +8,20 @@
 
 using namespace std;
 
+
+struct Room{
+
+    int roomNumber;
+    bool isVisited = false;
+    int reward = -1;
+
+    Room();
+    Room(int reward)
+        : reward(reward){}
+
+};
+
+
 class Qlearning
 {
 public:
@@ -35,7 +49,7 @@ public:
     void displayTrainedQTable();
 
     // Deploy the trained agent
-    void deployAgent(int goal);
+    void deployAgent(int maxSteps);
 
     void setGoalState(int goal){ goal_state = goal; }
 
@@ -43,13 +57,16 @@ public:
 
     void normalizeQTable();
 
+
 private:
 
     vector<vector<float> > q_table;
     vector<vector<int> > reward_matrix;
+    vector<Room> rooms;
 
     int goal_state = 10;
     int stepsToGoal = -1;
+    double maxRewardRecieved = 0;
 
     int numberOfStates = 11;
     int initial_state;
@@ -60,8 +77,10 @@ private:
     float learning_rate_decay = 0.001;
     float epsilon = 1.0;
     float epsilon_decay = 0.001;
-    int episodes = 1000;
-    int maxStepsPerEpisode = 100;
+    int episodes = 2;
+    int maxStepsPerEpisode = 5;
+
+
 
 };
 
