@@ -18,11 +18,18 @@
 class Astar
 {
 public:
+
+    struct nodes {
+      cv::Point pos;
+      double g_cost;
+      double h_cost;
+      double f_cost;
+      cv::Point cameFrom;
+    };
+
     Astar(std::string ImageIn);
-    void insertInOpen (int index, std::tuple<int, int, cv::Point>);
+    void insertInOpen (int index, std::tuple<double, double, cv::Point>);
     void findPath(cv::Point start, cv::Point end);
-    void f_cost(cv::Point currentPos);
-    std::vector<std::pair<float, cv::Point>> cost(cv::Point currentPos, char );
     void addBrushfire(std::vector<std::vector<int>> values){brushfireValues = values;};
     bool notInClosed(cv::Point);
     bool notInOpen(cv::Point);
@@ -30,15 +37,24 @@ public:
     void showOpenList();
     void showClosedList();
     bool notBoundary(cv::Point);
-    void showImage();
+    void showImage(int);
     void finalPath();
+    std::vector<nodes> cost1(nodes);
+    void fcost(nodes);
+    double getFinalDistance() {return finalDistance;}
+
 
 private:
     cv::Mat imageOrg;
-    std::vector<cv::Point> m_finalPath;
-    std::vector<std::tuple<int, int, cv::Point>> open, closed;
-    cv::Point start, target;
     std::vector<std::vector<int>> brushfireValues;
+    cv::Point start, target;
+    double finalDistance = 0;
+
+    std::vector<nodes> openList, closedList;
+
+    std::vector<std::tuple<double, double, cv::Point>> open, closed;
+    std::vector<cv::Point> m_finalPath;
+
 };
 
 #endif // ASTAR_H

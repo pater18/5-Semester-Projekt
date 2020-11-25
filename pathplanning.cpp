@@ -168,12 +168,12 @@ void pathPlanning::brushfire() {
     }
 
 
-    cv::namedWindow("Brushfire");
-    cv::imshow("Scaled original map", originalScaled);
-    cv::imshow("All points", imageOrg);
-    cv::imshow("Brushfire", BigBrush);
-    cv::imwrite("brushfire.png", Brushfire);
-    cv::imshow("Dilated", dilated);
-    cv::waitKey(0);
+//    cv::namedWindow("Brushfire");
+//    cv::imshow("Scaled original map", originalScaled);
+//    cv::imshow("All points", imageOrg);
+//    cv::imshow("Brushfire", BigBrush);
+//    cv::imwrite("brushfire.png", Brushfire);
+//    cv::imshow("Dilated", dilated);
+//    cv::waitKey(0);
     std::cerr << "time taken: " << (float)clock()/CLOCKS_PER_SEC << " secs" << std::endl;
 }
