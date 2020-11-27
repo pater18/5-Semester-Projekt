@@ -56,10 +56,6 @@ public:
     void deployAgent();
     void deployAgent2();
 
-    void setGoalState(int goal){ goal_state = goal; }
-
-    int getStepsToGoal(){ return stepsToGoal; }
-
     void normalizeQTable();
 
     void dataToCSV();
@@ -72,8 +68,6 @@ private:
     vector<vector<int> > reward_matrix;
     vector<Room> rooms;
 
-    int goal_state = 10;
-    int stepsToGoal = -1;
     double maxRewardRecieved = 0;
 
     int numberOfStates = 11;
@@ -81,7 +75,7 @@ private:
     int initial_state_random;
 
     float gamma = 0.9;
-    float learning_rate = 0.1;
+    float learning_rate = 0.01;
     float learning_rate_decay = 0.001;
 
     float epsilon = 1;
@@ -90,7 +84,7 @@ private:
     float max_exploration_rate = 1.0;
 
     int episodes;
-    int maxStepsPerEpisode = 5;
+    int maxStepsPerEpisode = 6;
 
 
     // Vectors for tests

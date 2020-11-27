@@ -55,7 +55,7 @@ void Qlearning::initQTable(){
 void Qlearning::initRewardMatrix(){
 
     // State init with distributed marbles in rooms - 1 marble is 5 points
-    Room room0Reward(20);
+    Room room0Reward(25);
     rooms.push_back((room0Reward));
     Room room1Reward(5);
     rooms.push_back(room1Reward);
@@ -65,7 +65,7 @@ void Qlearning::initRewardMatrix(){
     rooms.push_back(room3Reward);
     Room room4Reward(10);
     rooms.push_back(room4Reward);
-    Room room5Reward(0);
+    Room room5Reward(10);
     rooms.push_back(room5Reward);
     Room room6Reward(10);
     rooms.push_back(room6Reward);
@@ -121,13 +121,17 @@ void Qlearning::initRewardMatrix(){
 void Qlearning::setRandomInitState(){
 
     random_device rd;
-    uniform_int_distribution<int> random(0, numberOfStates - 1);
+    uniform_int_distribution<int> random(0, numberOfStates-1);
 
-    maxRewardRecieved = 0;
+    // Markov property - keeping track of which rooms have been visited
+    for(int i = 0; i < numberOfStates; i++){
+        rooms[i].roomNumber = i;
+        rooms[i].isVisited = false;
+        rooms[i].numberOfVisits = 0;
+    }
+
 
     initial_state_random = random(rd);
-
-    maxRewardRecieved += rooms[initial_state].reward;
 
     rooms[initial_state_random].isVisited = true;
 
@@ -151,24 +155,35 @@ int Qlearning::getAction(int current_state){
 
     double exploration_rate_threshold = exploration(rd);
 
-    if(exploration_rate_threshold >= epsilon){
 
-        int action = std::distance(q_table[current_state].begin(), max_element(q_table[current_state].begin(), q_table[current_state].end()));
+    if(exploration_rate_threshold > epsilon){
 
-//        cout << "visit " << rooms[current_state].numberOfVisits << endl;
-//        cout << "actions " << rooms[current_state].numberOfActions<< endl;
+        if(rooms[current_state].numberOfVisits == 0){
+            cout << "exploiting1" << endl;
+            rooms[current_state].numberOfVisits += 1;
+            return std::distance(q_table[current_state].begin(), max_element(q_table[current_state].begin(), q_table[current_state].end()));
+        } else if(rooms[current_state].numberOfVisits <= rooms[current_state].numberOfActions) {
 
-//            //maxElement.index - rooms[current_state].numberOfVisits
 
-//        int kth = rooms[current_state].numberOfVisits;
-//        int indexLargest = findKthLargestIndex(q_table[current_state], kth);
-//        rooms[current_state].numberOfVisits += 1;
+            if(rooms[current_state].numberOfVisits == rooms[current_state].numberOfActions){
 
-//        action = q_table[current_state][indexLargest] << endl;
-        return action;
+                rooms[current_state].numberOfVisits = 0;
+                cout << "exploiting3: " << endl;
+            }
 
+            int kth = rooms[current_state].numberOfVisits;
+
+            cout << "kth: " << kth << endl;
+            int indexLargest = findKthLargestIndex(q_table[current_state], kth);
+            rooms[current_state].numberOfVisits += 1;
+            cout << "exploiting2: " << endl;
+
+
+
+            return indexLargest;
+
+        }
     }
-
     return valid_actions[dist(rd)];
 }
 
@@ -186,10 +201,10 @@ int Qlearning::takeAction(int current_state, bool display){
     // Get the current state action value
     double current_sa_value = q_table[current_state][action];
     // Get the reward for the given state and the action taken
-    double reward = reward_matrix[current_state][action];
+    double reward = rooms[action].reward;
 
     // If the room has already been visited - reward is set to 0
-    if(rooms[current_state].isVisited == true){
+    if(rooms[action].isVisited == true){
         reward = 0;
     }
 
@@ -228,14 +243,9 @@ void Qlearning::runEpisode(){
     int current_state = initial_state_random;
     int stepCount = 0;
 
-    // Markov property - keeping track of which rooms have been visited
-    for(int i = 0; i < numberOfStates; i++){
-        rooms[i].roomNumber = i;
-        rooms[i].isVisited = false;
-        rooms[i].numberOfVisits = 0;
-    }
-
-    maxRewardRecieved = 0;
+    int initreward = rooms[current_state].reward;
+    cout << "init reward: " << initreward << endl;
+    maxRewardRecieved += initreward;
 
     while(true){
          // Take action from given state
@@ -244,7 +254,8 @@ void Qlearning::runEpisode(){
          // Terminate after max number of steps
          if(stepCount == maxStepsPerEpisode){
              cout << "Episode ended!" << endl;
-             cout << "Reward: " << maxRewardRecieved << endl;
+             cout << "Max Reward: " << maxRewardRecieved << endl;
+
              expectedReturnPerEpisode.push_back(maxRewardRecieved);
              maxRewardRecieved = 0;
              break;
@@ -264,14 +275,13 @@ void Qlearning::train(){
     cout << "Training started..." << endl;
     for (int episode = 0; episode < episodes; episode++) {
         episodeVec.push_back(episode);
-
+        cout << "Episode: " << episode << endl;
         //int current_state = 8;
         // Set random state - get the reward and mark as visitied
         setRandomInitState();
 
         // Run an episode
         runEpisode();
-
         // Update the epsilon value so it starts out exploring a lot and then less and less
         epsilon = min_exploration_rate + (max_exploration_rate - min_exploration_rate) * exp(-epsilon_decay * episode);
         //cout << "epsilon: " << epsilon << endl;
@@ -299,11 +309,12 @@ void Qlearning::displayTrainedQTable(){
 
 
 void Qlearning::deployAgent2(){
+
+    cout << "Deploy agent" << endl;
     // Epsilon as 0 so it only exploit what it has learned during training
     epsilon = 0;
     // Set init stata - get reward and mark as visited
     setRandomInitState();
-
     // Run 1 episode
     runEpisode();
 
