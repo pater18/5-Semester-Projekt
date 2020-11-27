@@ -5,6 +5,8 @@
 #include <vector>
 #include <random>
 #include <algorithm>
+#include <fstream>
+#include <math.h>
 
 using namespace std;
 
@@ -13,7 +15,9 @@ struct Room{
 
     int roomNumber;
     bool isVisited = false;
-    int reward = -1;
+    int reward = 0;
+    int numberOfVisits = 0;
+    int numberOfActions = 0;
 
     Room();
     Room(int reward)
@@ -41,15 +45,16 @@ public:
     int getAction(int current_state);
 
     // Run one episode
-    void runEpisode(bool display);
+    void runEpisode();
 
     // Train the agent - Run several episodes
-    void train(bool display);
+    void train();
 
     void displayTrainedQTable();
 
     // Deploy the trained agent
-    void deployAgent(int maxSteps);
+    void deployAgent();
+    void deployAgent2();
 
     void setGoalState(int goal){ goal_state = goal; }
 
@@ -57,10 +62,13 @@ public:
 
     void normalizeQTable();
 
+    void dataToCSV();
+
 
 private:
 
-    vector<vector<float> > q_table;
+    vector<vector<double> > q_table;
+    vector<vector<double> > q_tableDeploy;
     vector<vector<int> > reward_matrix;
     vector<Room> rooms;
 
@@ -70,17 +78,27 @@ private:
 
     int numberOfStates = 11;
     int initial_state;
-    int initial_state_random = 0;
+    int initial_state_random;
 
     float gamma = 0.9;
-    float learning_rate = 1.0;
+    float learning_rate = 0.1;
     float learning_rate_decay = 0.001;
-    float epsilon = 1.0;
+
+    float epsilon = 1;
     float epsilon_decay = 0.001;
-    int episodes = 2;
+    float min_exploration_rate = 0.01;
+    float max_exploration_rate = 1.0;
+
+    int episodes;
     int maxStepsPerEpisode = 5;
 
 
+    // Vectors for tests
+    vector<int> episodeVec;
+    vector<int> expectedReturnPerEpisode;
+
+    ofstream outputFile;
+    string filename = "qlearningTestNew.csv";
 
 };
 
