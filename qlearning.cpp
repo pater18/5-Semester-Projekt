@@ -69,13 +69,13 @@ void Qlearning::initRewardMatrix(){
     rooms.push_back(room5Reward);
     Room room6Reward(10);
     rooms.push_back(room6Reward);
-    Room room7Reward(30);
+    Room room7Reward(10);
     rooms.push_back(room7Reward);
     Room room8Reward(5);
     rooms.push_back(room8Reward);
     Room room9Reward(10);
     rooms.push_back(room9Reward);
-    Room room10Reward(20);
+    Room room10Reward(25);
     rooms.push_back(room10Reward);
 
 
@@ -282,8 +282,14 @@ void Qlearning::train(){
 
         // Run an episode
         runEpisode();
+
+        // vector with epsilon for tests
+        epsilonVec.push_back(epsilon);
+        learningRateVec.push_back(learning_rate);
+
         // Update the epsilon value so it starts out exploring a lot and then less and less
         epsilon = min_exploration_rate + (max_exploration_rate - min_exploration_rate) * exp(-epsilon_decay * episode);
+        learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * exp(-learning_rate_decay * episode);
         //cout << "epsilon: " << epsilon << endl;
     }
 
@@ -393,6 +399,18 @@ void Qlearning::dataToCSV(){
 
     for(auto &returnEpisode : expectedReturnPerEpisode){
         outputFile << returnEpisode << ",";
+    }
+
+    outputFile << endl;
+
+    for(auto &epsilon : epsilonVec){
+        outputFile << epsilon << ",";
+    }
+
+    outputFile << endl;
+
+    for(auto &learning_rate : learningRateVec){
+        outputFile << learning_rate << ",";
     }
 
     cout << "Data formatted to CSV file." << endl;

@@ -74,12 +74,14 @@ private:
     int initial_state;
     int initial_state_random;
 
-    float gamma = 0.9;
-    float learning_rate = 0.01;
+    float gamma = 0.8;
+    float learning_rate = 1.0;
     float learning_rate_decay = 0.001;
+    float min_learning_rate = 0.001;
+    float max_learning_rate = 1.0;
 
-    float epsilon = 1;
-    float epsilon_decay = 0.001;
+    float epsilon = 1.0;
+    float epsilon_decay = 0.005;
     float min_exploration_rate = 0.01;
     float max_exploration_rate = 1.0;
 
@@ -90,6 +92,8 @@ private:
     // Vectors for tests
     vector<int> episodeVec;
     vector<int> expectedReturnPerEpisode;
+    vector<double> epsilonVec;
+    vector<double> learningRateVec;
 
     ofstream outputFile;
     string filename = "qlearningTestNew.csv";
