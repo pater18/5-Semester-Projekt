@@ -59,11 +59,11 @@ void fuzzyController::setupFuzzyController(){
     dir->setDefuzzifier(new Centroid(100));
     dir->setDefaultValue(fl::nan);
     dir->setLockPreviousValue(false);
-    dir->addTerm(new Ramp("fastL", -0.200, -0.400));
-    dir->addTerm(new Triangle("slowL", -0.400, -0.200, 0.000));
+    dir->addTerm(new Ramp("leftBig", -0.200, -0.400));
+    dir->addTerm(new Triangle("leftSmall", -0.400, -0.200, 0.000));
     dir->addTerm(new Triangle("none", -0.200, 0.000, 0.200));
-    dir->addTerm(new Triangle("slowR", 0.000, 0.200, 0.400));
-    dir->addTerm(new Ramp("fastR", 0.200, 0.400));
+    dir->addTerm(new Triangle("rightSmall", 0.000, 0.200, 0.400));
+    dir->addTerm(new Ramp("rightBig", 0.200, 0.400));
     engine->addOutputVariable(dir);
 
     // Velocity
@@ -91,108 +91,38 @@ void fuzzyController::setupFuzzyController(){
     mamdani->setImplication(new AlgebraicProduct);
     mamdani->setActivation(new General);
 
-//    // Front distance okay dir
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is okay then dir is none", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is medium then dir is none", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is close then dir is slowL", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is okay then dir is none", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is medium then dir is none", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is close then dir is slowL", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is okay then dir is fastR", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is medium then dir is slowR", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is close then dir is none", engine));
-
-//    // Front distance medium dir
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is okay then dir is slowL", engine)); // slowL/R
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is medium then dir is slowL", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is close then dir is fastL", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is okay then dir is slowR", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is medium then dir is slowL", engine)); //slowL/R
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is close then dir is slowL", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is okay then dir is fastR", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is medium then dir is slowR", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is close then dir is none", engine));
-
-//    // Front distance close dir
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is okay then dir is fastL", engine)); // fastL/R
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is medium then dir is fastL", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is close then dir is fastL", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is okay then dir is fastR", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is medium then dir is fastL", engine)); // fastL/R
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is close then dir is fastL", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is okay then dir is fastR", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is medium then dir is fastR", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is close then dir is slowL", engine)); // Maybe turn around - stuck situation
-
-
-//    // Front distance okay vel
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is okay then vel is fast", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is medium then vel is fast", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is close then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is okay then vel is fast", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is medium then vel is fast", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is close then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is okay then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is medium then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is close then vel is medium", engine));
-
-//    // Front distance medium vel
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is okay then vel is medium", engine)); // slowL/R
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is medium then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is close then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is okay then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is medium then vel is medium", engine)); //slowL/R
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is close then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is okay then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is medium then vel is medium", engine));
-//    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is close then vel is slow", engine));
-
-//    // Front distance close vel
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is okay then vel is slow", engine)); // fastL/R
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is medium then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is close then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is okay then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is medium then vel is slow", engine)); // fastL/R
-//    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is close then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is okay then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is medium then vel is slow", engine));
-//    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is close then vel is slow", engine)); // Maybe turn around - stuck situation
-
-
     // Front distance okay dir and vel
     mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is okay then dir is none and vel is fast", engine));
     mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is medium then dir is none and vel is fast", engine));
-    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is close then dir is slowL and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is okay and disL is okay and disR is close then dir is leftBig and vel is medium", engine));
     mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is okay then dir is none and vel is fast", engine));
     mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is medium then dir is none and vel is fast", engine));
-    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is close then dir is slowL and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is okay then dir is fastR and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is medium then dir is slowR and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is okay and disL is medium and disR is close then dir is leftSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is okay then dir is rightBig and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is medium then dir is rightSmall and vel is medium", engine));
     mamdani->addRule(Rule::parse("if disF is okay and disL is close and disR is close then dir is none and vel is medium", engine));
 
     // Front distance medium dir and vel
-    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is okay then dir is slowL and vel is medium", engine)); // slowL/R
-    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is medium then dir is slowL and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is close then dir is fastL and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is okay then dir is slowR and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is medium then dir is slowL and vel is medium", engine)); //slowL/R
-    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is close then dir is slowL and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is okay then dir is fastR and vel is medium", engine));
-    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is medium then dir is slowR and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is okay then dir is leftSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is medium then dir is leftSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is okay and disR is close then dir is leftBig and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is okay then dir is rightSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is medium then dir is leftSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is medium and disR is close then dir is leftSmall and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is okay then dir is rightBig and vel is medium", engine));
+    mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is medium then dir is rightSmall and vel is medium", engine));
     mamdani->addRule(Rule::parse("if disF is medium and disL is close and disR is close then dir is none and vel is slow", engine));
 
     // Front distance close dir and vel
-    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is okay then dir is fastL and vel is slow", engine)); // fastL/R
-    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is medium then dir is fastL and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is close then dir is fastL and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is okay then dir is fastR and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is medium then dir is fastL and vel is slow", engine)); // fastL/R
-    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is close then dir is fastL and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is okay then dir is fastR and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is medium then dir is fastR and vel is slow", engine));
-    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is close then dir is slowL and vel is slow", engine)); // Maybe turn around - stuck situation
-
-
+    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is okay then dir is leftBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is medium then dir is leftBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is okay and disR is close then dir is leftBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is okay then dir is rightBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is medium then dir is leftBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is medium and disR is close then dir is leftBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is okay then dir is rightBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is medium then dir is rightBig and vel is slow", engine));
+    mamdani->addRule(Rule::parse("if disF is close and disL is close and disR is close then dir is leftSmall and vel is slow", engine));
 
     engine->addRuleBlock(mamdani);
 
@@ -212,17 +142,17 @@ void fuzzyController::setupFuzzyControllerGoal() {
     // Inputs to the controller
 
     // Yaw angle correction from rob to goal point
-    angleY->setName("angleY");
-    angleY->setDescription("");
-    angleY->setEnabled(true);
-    angleY->setRange(-3.141, 3.141);
-    angleY->setLockValueInRange(false);
-    angleY->addTerm(new Ramp("negLarge", -0.250, -0.500));
-    angleY->addTerm(new Triangle("negSmall", -0.500, -0.250, 0.000));
-    angleY->addTerm(new Triangle("zero", -0.500, 0.000, 0.500));
-    angleY->addTerm(new Triangle("posSmall", 0.000, 0.250, 0.500));
-    angleY->addTerm(new Ramp("posLarge", 0.250, 0.500));
-    engineGoal->addInputVariable(angleY);
+    inputAngle->setName("inputAngle");
+    inputAngle->setDescription("");
+    inputAngle->setEnabled(true);
+    inputAngle->setRange(-3.141, 3.141);
+    inputAngle->setLockValueInRange(false);
+    inputAngle->addTerm(new Ramp("negLarge", -0.250, -0.500));
+    inputAngle->addTerm(new Triangle("negSmall", -0.500, -0.250, 0.000));
+    inputAngle->addTerm(new Triangle("zero", -0.250, 0.000, 0.250));
+    inputAngle->addTerm(new Triangle("posSmall", 0.000, 0.250, 0.500));
+    inputAngle->addTerm(new Ramp("posLarge", 0.250, 0.500));
+    engineGoal->addInputVariable(inputAngle);
 
     // Outputs from the controller
 
@@ -236,11 +166,11 @@ void fuzzyController::setupFuzzyControllerGoal() {
     dirGoal->setDefuzzifier(new Centroid(100));
     dirGoal->setDefaultValue(fl::nan);
     dirGoal->setLockPreviousValue(false);
-    dirGoal->addTerm(new Ramp("fastL", -0.200, -0.400));
-    dirGoal->addTerm(new Triangle("slowL", -0.400, -0.200, 0.000));
+    dirGoal->addTerm(new Ramp("leftBig", -0.200, -0.400));
+    dirGoal->addTerm(new Triangle("leftSmall", -0.400, -0.200, 0.000));
     dirGoal->addTerm(new Triangle("none", -0.200, 0.000, 0.200));
-    dirGoal->addTerm(new Triangle("slowR", 0.000, 0.200, 0.400));
-    dirGoal->addTerm(new Ramp("fastR", 0.200, 0.400));
+    dirGoal->addTerm(new Triangle("rightSmall", 0.000, 0.200, 0.400));
+    dirGoal->addTerm(new Ramp("rightBig", 0.200, 0.400));
     engineGoal->addOutputVariable(dirGoal);
 
     // Velocity
@@ -268,11 +198,11 @@ void fuzzyController::setupFuzzyControllerGoal() {
     mamdaniGoal->setActivation(new General);
 
     // Angle rules
-    mamdaniGoal->addRule(Rule::parse("if angleY is negLarge then dirGoal is fastR and velGoal is slow", engineGoal));
-    mamdaniGoal->addRule(Rule::parse("if angleY is negSmall then dirGoal is slowR and velGoal is medium", engineGoal));
-    mamdaniGoal->addRule(Rule::parse("if angleY is zero then dirGoal is none and velGoal is fast", engineGoal));
-    mamdaniGoal->addRule(Rule::parse("if angleY is posSmall then dirGoal is slowL and velGoal is medium", engineGoal));
-    mamdaniGoal->addRule(Rule::parse("if angleY is posLarge then dirGoal is fastL and velGoal is slow", engineGoal));
+    mamdaniGoal->addRule(Rule::parse("if inputAngle is negLarge then dirGoal is rightBig and velGoal is slow", engineGoal));
+    mamdaniGoal->addRule(Rule::parse("if inputAngle is negSmall then dirGoal is rightSmall and velGoal is medium", engineGoal));
+    mamdaniGoal->addRule(Rule::parse("if inputAngle is zero then dirGoal is none and velGoal is fast", engineGoal));
+    mamdaniGoal->addRule(Rule::parse("if inputAngle is posSmall then dirGoal is leftSmall and velGoal is medium", engineGoal));
+    mamdaniGoal->addRule(Rule::parse("if inputAngle is posLarge then dirGoal is leftBig and velGoal is slow", engineGoal));
 
 
     engineGoal->addRuleBlock(mamdaniGoal);
@@ -295,20 +225,15 @@ void fuzzyController::runFuzzyController(float distFront, float distLeft, float 
 
     outputVelocity = double(vel->getValue());
     outputDirection = double(dir->getValue());
-
-    //FL_LOG("vel: " << Op::str(vel->getValue()) <<
-         //      " => " << "dir: " << Op::str(dir->getValue()));
 }
 
 void fuzzyController::runFuzzyControllerGoal(double inputAngleY){
 
-    angleY->setValue(inputAngleY);
+    inputAngle->setValue(inputAngleY);
 
     engineGoal->process();
 
     outputDirectionGoal = double(dirGoal->getValue());
     outputVelocityGoal = double(velGoal->getValue());
-
-    //FL_LOG("dirGoal: " << Op::str(dirGoal->getValue()));
 }
 

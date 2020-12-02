@@ -38,7 +38,7 @@ private:
     InputVariable* disF = new InputVariable;
     InputVariable* disL = new InputVariable;
     InputVariable* disR = new InputVariable;
-    InputVariable* angleY = new InputVariable;
+    InputVariable* inputAngle = new InputVariable;
 
     OutputVariable* vel = new OutputVariable;
     OutputVariable* dir = new OutputVariable;

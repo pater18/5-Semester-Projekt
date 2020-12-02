@@ -2,10 +2,11 @@
 #include <opencv2/opencv.hpp>
 #include <typeinfo>
 #include <cmath>
+#include <random>
+#include <time.h>
 
-#include "marbledetection.h"
-#include "lidarsensor.h"
 #include "callBackFunctions.h"
+#include "lidarsensor.h"
 #include "fuzzycontroller.h"
 #include "pose.h"
 
@@ -65,10 +66,6 @@ int main(int _argc, char **_argv) {
     worldPublisher->Publish(controlMessage);
 
 
-    // Create an object for marble detection
-    //MarbleDetection marble;
-    //marble.runMarbleDetection();
-
     // Create an object for lidar sensor
     lidarSensor lidar;
     lidar.runLidarSensor();
@@ -89,34 +86,31 @@ int main(int _argc, char **_argv) {
     pose Pose;
     Pose.runPose();
 
-
-    // keys to control robot
-    const int key_left = 81;
-    const int key_up = 82;
-    const int key_down = 84;
-    const int key_right = 83;
-    const int key_esc = 27;
-
     // initialize robot states
     bool emergencyStop = false;
     bool goalReached = false;
-    //    bool distToFar = false;
+    bool terminate = false;
 
-    // set speed and direction for the robot
+    // set speed, direction and angle calculation for the robot
     float speed = 0.0;
     double dir = 0.0;
-
-    // set goal position and get the angle from rob to point
-    double goalPosX = 38.0;
-    double goalPosY = 22.0;
     double angleRobToPoint = 0.0;
     double angleYaw = 0.0;
     double inputAngle = 0.0;
-//    double distToPointOld = std::sqrt(std::pow(goalPosY - Pose.getPosY(),2) + std::pow(goalPosX - Pose.getPosX(),2));
-//    double distToPointNew = 0.0;
 
+
+    // Test right half of the map
+    std::vector<cv::Point2d> goalPos {cv::Point2d(22.0, 6.0), cv::Point2d(34.0, 20.0), cv::Point2d(33.0, -12.0), cv::Point2d(18.0, -7.0), cv::Point2d(16.0, -21.0), cv::Point2d(-4.0, -21.0)};
+
+    // Test left half of the map
+    //std::vector<cv::Point2d> goalPos {cv::Point2d(-17.0, -2.0), cv::Point2d(-37.0, -6.0), cv::Point2d(-16.0, 0.0), cv::Point2d(-9.0, 16.0), cv::Point2d(0.0, 8.0), cv::Point2d(-26.0, 16.0), cv::Point2d(-37.0, 23.0)};
+    std::vector<cv::Point2d> goalPosTemp = goalPos;
+
+    // To visualize the paths taken by the robot from start to goal
+    cv::Mat finalPath = cv::imread("floor_plan.png");
     std::vector<cv::Point2d> robToGoalPath;
     int counter = 0;
+    srand(time(NULL));
 
     // Infinite Loop
     while (!goalReached) {
@@ -127,62 +121,52 @@ int main(int _argc, char **_argv) {
         distFront = std::get<1>(ranges);
         distLeft = std::get<2>(ranges);
 
-
-        // Distance to marble
-        //marble.distanceToMarbleOld(&lidar);
-        //marble.distanceToMarble(distFront);
-
-
         // Fuzzy controller angle calculation for go to goal point
-        angleRobToPoint = std::atan2(goalPosY - Pose.getPosY(), goalPosX - Pose.getPosX());
+        angleRobToPoint = std::atan2(goalPosTemp[0].y - Pose.getPosY(), goalPosTemp[0].x - Pose.getPosX());
         angleYaw = Pose.getYaw();
 
-        if ( (angleRobToPoint > 0 && angleYaw < -1.7) || (angleRobToPoint < 0 && angleYaw > 1.7) ) {
-            inputAngle = angleYaw - angleRobToPoint;
-        } else if (angleRobToPoint > 0) {
+        if ((angleRobToPoint < -1.57 && angleYaw < 0 && angleYaw > -1.57) || (angleRobToPoint > 0.0 && angleRobToPoint < 1.57 && angleYaw < -1.57)) {
             inputAngle = angleRobToPoint - std::abs(angleYaw);
-        } else if (angleRobToPoint < 0) {
+        } else if ((angleRobToPoint < -1.57 && angleYaw > 1.57) || (angleRobToPoint > 1.57  && angleYaw < 0.0)) {
+            inputAngle = angleYaw - angleRobToPoint;
+        } else {
             inputAngle = angleRobToPoint - angleYaw;
         }
-
 
         std::cout << "posX: " << Pose.getPosX() << " posY: " << Pose.getPosY() << " yaw: " << angleYaw << std::endl;
         std::cout << "angle: " << angleRobToPoint << std::endl;
         std::cout << "angle-yaw: " << inputAngle << std::endl;
-
+        std::cout << "goalPos size: " << goalPosTemp.size() << std::endl;
 
 
         gazebo::common::Time::MSleep(10);
-
         int key = cv::waitKey(1);
 
-        // if "q" pressed - terminate program
-        if (key == key_esc){
-          break;
+
+        // check if goal pos is reached
+        if (( goalPosTemp[0].x == int(Pose.getPosX()) && goalPosTemp[0].y == int(Pose.getPosY()) )|| terminate) {
+            std::cout << " sub goal reached" << std::endl;
+
+            // erase the reached goal and go to next goal
+            goalPosTemp.erase(goalPosTemp.begin());
+
+            // To visualize the paths taken by the robot from start to subGoal
+            cv::Scalar color(rand()%255, rand()%255, rand()%255);
+            for(size_t i = 0; i < robToGoalPath.size(); i++) {
+                robToGoalPath[i].x = (robToGoalPath[i].x*1.38 + finalPath.cols/2);
+                robToGoalPath[i].y *= -1;
+                robToGoalPath[i].y = (robToGoalPath[i].y*1.48 + finalPath.rows/2);
+                cv::circle(finalPath, robToGoalPath[i], 0, color, 1);
+            }
+
+            robToGoalPath.clear();
+
+            if (goalPosTemp.size() == 0 || terminate) {
+                goalReached = true;
+            }
         }
 
-
-
-        // robot controller with arrow keys
-//        if ((key == key_up))
-//          speed += 0.05;
-//        else if ((key == key_down))
-//          speed -= 0.05;
-//        else if ((key == key_right) && (dir <= 0.4f))
-//          dir += 0.05;
-//        else if ((key == key_left) && (dir >= -0.4f))
-//          dir -= 0.05;
-//        else {
-//          // slow down
-//          //      speed *= 0.1;
-//               //dir *= 0.1;
-//        }
-
-
-        if (goalPosX == int(Pose.getPosX()) && goalPosY == int(Pose.getPosY())) {
-            goalReached = true;
-        }
-
+        // different statea for the robot to be in
         if(key == 's'){
             emergencyStop = true;
         }
@@ -191,24 +175,9 @@ int main(int _argc, char **_argv) {
             emergencyStop = false;
         }
 
-
-//        distToPointNew = std::sqrt(std::pow(goalPosY - Pose.getPosY(),2) + std::pow(goalPosX - Pose.getPosX(),2));
-
-//        if ( distToPointNew > distToPointOld + 2 ) {
-//            distToFar = true;
-//        }
-
-//        if ( distToPointNew < distToPointOld - 5) {
-//            distToPointOld = distToPointNew;
-//        }
-
-//        if ( distToPointNew > distToPointOld + 2 ) {
-//            speed = 0.0;
-//            dir = controllerGoal.getOutputDirectionGoal();
-//            distToPointOld = distToPointNew;
-//            std::cout << "stop robot and rotate" << std::endl;
-//        }
-
+        if(key == 't') {
+            terminate = true;
+        }
 
         // Choose which fuzzy controller to run
         if(distRight < distMinCon || distFront < distMinCon || distLeft < distMinCon){
@@ -217,7 +186,7 @@ int main(int _argc, char **_argv) {
             controllerGoal.runFuzzyControllerGoal(inputAngle);
         }
 
-
+        // robot control
         if(emergencyStop){
             speed = 0.0;
             dir = 0.0;
@@ -225,24 +194,8 @@ int main(int _argc, char **_argv) {
         } else if (goalReached) {
             dir = 0.0;
             speed = 0.0;
-            std::cout << "goal reached" << std::endl;
-        }
-//        else if (distToFar) {
-//            dir = controllerGoal.getOutputDirectionGoal();
-//            speed = 0.0;
-//            std::cout << "stop robot and rotate" << std::endl;
-//            if (key == 'r') {
-//                distToPointOld = distToPointNew;
-//                distToFar = false;
-//                std::cout << "distToFar: " << distToFar << std::endl;
-//            }
-//            if (inputAngle < 0.005 && inputAngle > -0.005) {
-//                distToPointOld = distToPointNew;
-//                distToFar = false;
-//                std::cout << "distToFar: " << distToFar << std::endl;
-//            }
-//        }
-        else if((distRight < distMinCon && distRight != 0) || (distFront <= distMinCon && distFront != 0) || (distLeft < distMinCon && distLeft != 0)){
+            std::cout << "end goal reached" << std::endl;
+        } else if((distRight < distMinCon && distRight != 0) || (distFront <= distMinCon && distFront != 0) || (distLeft < distMinCon && distLeft != 0)){
             dir = controller.getOutputDirection();
             speed = controller.getOutputVelocity();
             std::cout << "controller obstacle avoidance" << std::endl;
@@ -252,8 +205,6 @@ int main(int _argc, char **_argv) {
             std::cout << "controller goal" << std::endl;
         }
 
-
-        std::cout << "inputAngle: " << inputAngle << std::endl;
         std::cout << "speed: " << speed << std::endl;
         std::cout << "dir: " << dir << std::endl;
 
@@ -261,8 +212,8 @@ int main(int _argc, char **_argv) {
         // Generate a pose
         ignition::math::Pose3d pose(double(speed), 0, 0, 0, 0, double(dir));
 
+        // gets robot position to visualize taken paths
         counter++;
-
         if (counter == 20) {
             robToGoalPath.push_back(cv::Point2d(Pose.getPosX(), Pose.getPosY()));
             counter = 0;
@@ -275,23 +226,28 @@ int main(int _argc, char **_argv) {
 
     }
 
+    // visualization of marbles from given map
+    std::vector<cv::Point2d> marblesPos {cv::Point2d(-13.20, -6.43), cv::Point2d(-31.58, -4.01), cv::Point2d(11.62,-18.21), cv::Point2d(-17.30, 18.32), cv::Point2d(-29.62, 10.65),
+                                         cv::Point2d(8.74, 11.85), cv::Point2d(24.73, 14.43), cv::Point2d(-22.45, -6.26), cv::Point2d(-23.57, 8.09), cv::Point2d(11.7305, -3.1118),
+                                         cv::Point2d(16.28, -13.15), cv::Point2d(26.70, -10.66), cv::Point2d(25.73, 9.65), cv::Point2d(8.20, -3.52), cv::Point2d(30.94, -9.27),
+                                         cv::Point2d(25.76, -0.12), cv::Point2d(19.22, 14.21), cv::Point2d(29.92, 21.98), cv::Point2d(2.82, 16.63), cv::Point2d(-15.69, -4.22)};
 
-    cv::Mat finalPath = cv::imread("floor_plan.png");
-
-    std::cout << "robToGoalPath: ";
-    for(size_t i = 0; i < robToGoalPath.size(); i++) {
-        robToGoalPath[i].x = (robToGoalPath[i].x*1.5 + finalPath.cols/2);
-        robToGoalPath[i].y *= -1;
-        robToGoalPath[i].y = (robToGoalPath[i].y*1.5 + finalPath.rows/2);
+    for(size_t i = 0; i < marblesPos.size(); i++) {
+        marblesPos[i].x = (marblesPos[i].x*1.38 + finalPath.cols/2);
+        marblesPos[i].y *= -1;
+        marblesPos[i].y = (marblesPos[i].y*1.48 + finalPath.rows/2);
+        cv::circle(finalPath, marblesPos[i], 1, cv::Scalar(128,128,128), -1);
     }
-    std::cout << std::endl;
 
-    std::cout << "row: " << finalPath.rows << " col: " << finalPath.cols << std::endl;
-
-    for(size_t i = 0; i < robToGoalPath.size(); ++i) {
-        cv::circle(finalPath, robToGoalPath[i], 0, cv::Scalar(0,0,255), 1);
-        //cv::line(finalPath, robToGoalPath[i], robToGoalPath[i+1], cv::Scalar(255,0,0), 1);
+    // visualize start-, sub- and endPos of robot path
+    for(size_t i = 0; i < goalPos.size(); i++) {
+        goalPos[i].x = (goalPos[i].x*1.38 + finalPath.cols/2);
+        goalPos[i].y *= -1;
+        goalPos[i].y = (goalPos[i].y*1.48 + finalPath.rows/2);
+        cv::circle(finalPath, goalPos[i], 1, cv::Scalar(255,0,0), -1);
     }
+    cv::circle(finalPath, cv::Point2d(finalPath.cols/2, finalPath.rows/2), 1, cv::Scalar(0,255,0), -1);
+    cv::circle(finalPath, goalPos[goalPos.size()-1], 1, cv::Scalar(0,0,255), -1);
 
     cv::namedWindow("finalPath");
     cv::resize(finalPath, finalPath, cv::Size(finalPath.cols*5, finalPath.rows*5), 0, 0, cv::INTER_NEAREST);
