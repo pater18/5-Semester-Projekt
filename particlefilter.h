@@ -1,7 +1,6 @@
 #ifndef PARTICLEFILTER_H
 #define PARTICLEFILTER_H
 
-#include "landmarks.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -12,8 +11,8 @@
 struct Particle {
 
     int id;
-    double x;
-    double y;
+    int x;
+    int y;
     double orientation;
     double weight;
     std::vector<double> associations;
@@ -27,13 +26,14 @@ struct Particle {
 
 class ParticleFilter
 {
+
 public:
     ParticleFilter();
     ParticleFilter(int numberOfParticles)
         :numberOfParticles(numberOfParticles) {}
 
-
     std::vector<Particle> particles;
+
 
     void drawParticles(cv::Mat &map);
 
@@ -53,7 +53,7 @@ public:
 
 
     bool particleFilterInitialized(){ return particleFilterInit; }
-    std::vector<double> getParticleWeights(){ return weights; }
+
 
     // Function to run the particle filter on map. Implement as the last thing if its possible
     void runParticleFilter(int map);
@@ -63,27 +63,16 @@ public:
 
     void prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate, Particle robot);
 
-    void associateData(const std::vector<LandmarkObservation> &predicted, std::vector<LandmarkObservation> &observations);
-
     void associateParticlesWithRobot(Particle &robot);
+
+    void updateTheWeights(cv::Mat &map, Particle &robot);
 
     void normalizeWeights(std::vector<double> &weights);
 
-    void updateWeights(double lidar_range, double stdLandmark[], const std::vector<LandmarkObservation> &observations, const Map &map_landmarks);
-
-    void printParticles(Particle particles);
-
     void resampleParticles(int numberOfResample, double stddivPosition);
-
-    void setAssociations(Particle& particle, std::vector<double> new_associations, std::vector<double> new_sense_x, std::vector<double> new_sense_y);
-
-    std::vector<double> getAssociations(Particle best) { return best.associations; }
-    std::vector<double> getSenseX(Particle best) { return best.sense_x; }
-    std::vector<double> getSenseY(Particle best) {return best.sense_y; }
 
 
 private:
-
 
     // True random numbers
     std::random_device rd;

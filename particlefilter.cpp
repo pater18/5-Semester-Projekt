@@ -15,7 +15,6 @@ void ParticleFilter::initializeParticleFilter(double x, double y, double orienta
     std::uniform_real_distribution<double> rand_y(y, map.rows);
     std::uniform_real_distribution<double> rand_orien(0.0, 360.0);
 
-
     for(int i = 0; i < numberOfParticles; i++){
 
         Particle particle;
@@ -38,7 +37,7 @@ void ParticleFilter::initializeParticleFilter(double x, double y, double orienta
 void ParticleFilter::lidarParticles(cv::Mat &map){
 
 
-    for(int par = 0; par < particles.size(); par++){
+    for(size_t par = 0; par < particles.size(); par++){
 
         for(int point = 0; point < noPoints; point++) {
           // angle for the lidar point
@@ -48,7 +47,8 @@ void ParticleFilter::lidarParticles(cv::Mat &map){
 
           cv::Point2f endPoint(particles[par].x + lidarMaxRange * std::cos(angle), particles[par].y + lidarMaxRange * std::sin(angle));
 
-          cv::Point particlePoint = {particles[par].x, particles[par].y};
+          // Check this int cast - should not be here but error occurs if not
+          cv::Point particlePoint = {int(particles[par].x), int(particles[par].y)};
 
           cv::LineIterator lineIt(map, particlePoint, endPoint);
 
@@ -80,7 +80,8 @@ void ParticleFilter::robotLidar(Particle &robot, cv::Mat &map){
 
       cv::Point2f endPoint(robot.x + lidarMaxRange * std::cos(angle), robot.y + lidarMaxRange * std::sin(angle));
 
-      cv::Point particlePoint = {robot.x, robot.y};
+      // Check this int cast - should not be here but error occurs if not
+      cv::Point particlePoint = {int(robot.x), int(robot.y)};
 
       cv::LineIterator lineIt(map, particlePoint, endPoint);
 
@@ -118,9 +119,10 @@ void ParticleFilter::drawRobotParticle(Particle &robot, cv::Mat &map){
 
 }
 
+
 void ParticleFilter::drawLidarParticles(cv::Mat &map){
 
-    for(int par = 0; par < particles.size(); par++){
+    for(size_t par = 0; par < particles.size(); par++){
         for(int point = 0; point < noPoints; point++){
 
             float angle = particles[par].orientation * (3.14 / 180.0) - 100 * angle_increment + point * angle_increment;;
@@ -141,8 +143,6 @@ void ParticleFilter::drawParticles(cv::Mat &map){
     }
 }
 
-
-
 // orientation_rate = delta direction / delta time step - updates somewhere else
 void ParticleFilter::prediction(double delta_timestep, double stdPos, double velocity, double orientation_rate, Particle robot){
 
@@ -153,7 +153,6 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         double y = particle.y;
         double orien = particle.orientation;
 
-        //std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
 
         // Odometry
 
@@ -166,36 +165,28 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
             orien += delta_timestep * orientation_rate;
         }
 
-       // std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
-        particle.x = x;
-        particle.y = y;
-        particle.orientation = orien;
+//        particle.x = x;
+//        particle.y = y;
+//        particle.orientation = orien;
 
-//        // Noise from odometry
-//        std::normal_distribution<double> noise_x(x, stdPos);
-//        std::normal_distribution<double> noise_y(y, stdPos);
-//        std::normal_distribution<double> noise_orien(orien, stdPos);
+        // Noise from odometry
+        std::normal_distribution<double> noise_x(x, stdPos);
+        std::normal_distribution<double> noise_y(y, stdPos);
+        std::normal_distribution<double> noise_orien(orien, stdPos);
 
-//        particle.x = noise_x(rd);
-//        particle.y = noise_y(rd);
-//        particle.orientation = noise_orien(rd);
-
-//        robot.x = noise_x(rd);
-//        robot.y = noise_y(rd);
-//        robot.orientation = noise_orien(rd);
-
-        //std::cout << "x2: " << x << " y2: "<< y << " orien2: " << orien << std::endl;
+        particle.x = noise_x(rd);
+        particle.y = noise_y(rd);
+        particle.orientation = noise_orien(rd);
 
     }
 }
+
 
 void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velocity, double orientation_rate, Particle &robot){
 
     double x = robot.x;
     double y = robot.y;
     double orien = robot.orientation;
-
-    //std::cout << "x: " << x << " y: "<< y << " orien: " << orien << std::endl;
 
     // Odometry
 
@@ -208,13 +199,9 @@ void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velo
         orien += delta_timestep * orientation_rate;
     }
 
-    //std::cout << "x1: " << x << " y1: "<< y << " orien1: " << orien << std::endl;
-
-
     robot.x = x;
     robot.y = y;
     robot.orientation = orien;
-
 
 //    // Noise from odometry
 //    std::normal_distribution<double> noise_x(x, stdPos);
@@ -226,6 +213,7 @@ void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velo
 //    robot.orientation = noise_orien(rd);
 
 }
+
 
 void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 
@@ -261,24 +249,24 @@ void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 }
 
 
-void ParticleFilter::associateData(const std::vector<LandmarkObservation>& predictions, std::vector<LandmarkObservation>& observations){
+//void ParticleFilter::associateData(const std::vector<LandmarkObservation>& predictions, std::vector<LandmarkObservation>& observations){
 
-    for(size_t obs = 0; obs < observations.size(); obs++){
+//    for(size_t obs = 0; obs < observations.size(); obs++){
 
-        double distance = 0.0;
-        double min_distance = 100.0;
+//        double distance = 0.0;
+//        double min_distance = 100.0;
 
-        for(size_t pre = 0; pre < predictions.size(); pre++){
+//        for(size_t pre = 0; pre < predictions.size(); pre++){
 
-            distance = std::sqrt(std::pow((observations[obs].x - predictions[pre].x), 2) + std::pow((observations[obs].y - predictions[pre].y), 2));
+//            distance = std::sqrt(std::pow((observations[obs].x - predictions[pre].x), 2) + std::pow((observations[obs].y - predictions[pre].y), 2));
 
-            if(distance < min_distance){
-                min_distance = distance;
-                observations[obs].id = predictions[pre].id;
-            }
-        }
-    }
-}
+//            if(distance < min_distance){
+//                min_distance = distance;
+//                observations[obs].id = predictions[pre].id;
+//            }
+//        }
+//    }
+//}
 
 
 void ParticleFilter::normalizeWeights(std::vector<double> &weights){
@@ -305,30 +293,6 @@ void ParticleFilter::normalizeWeights(std::vector<double> &weights){
     }
 
 }
-
-
-void ParticleFilter::updateWeights(double lidar_range, double stdLandmark[], const std::vector<LandmarkObservation> &observations, const Map &map_landmarks){
-
-    for(auto &p : particles){
-
-
-        // 1. Match map landmarks from particles and observation coordinates from lidar
-
-
-
-
-        // 2. Associate the landmarks and observations
-
-
-
-
-        // 3. Update the weights
-
-    }
-
-}
-
-
 
 
 void ParticleFilter::resampleParticles(int numberOfResample, double stddivPosition){
@@ -394,17 +358,4 @@ void ParticleFilter::resampleParticles(int numberOfResample, double stddivPositi
 //        particles.push_back(particle);
 
 //    }
-}
-
-
-void ParticleFilter::setAssociations(Particle& particle, std::vector<double> new_associations, std::vector<double> new_sense_x, std::vector<double> new_sense_y){
-
-    particle.associations.clear();
-    particle.sense_x.clear();
-    particle.sense_y.clear();
-
-    particle.associations = new_associations;
-    particle.sense_x = new_sense_x;
-    particle.sense_y = new_sense_y;
-
 }

@@ -13,6 +13,8 @@ int main()
     cv::Mat map;
     map = cv::imread("floor_plan.png");
 
+    cv::resize(map, map, cv::Size(map.cols * 3, map.rows * 3), 0, 0, cv::INTER_NEAREST);
+
     char key;
 
     ParticleFilter pf(1000);
@@ -86,17 +88,14 @@ int main()
 
         if(run == true){
 
-            cv::Mat map;
             map = cv::imread("floor_plan.png");
+
+            cv::resize(map, map, cv::Size(map.cols * 3, map.rows * 3), 0, 0, cv::INTER_NEAREST);
 
            // cv::resize(map, map, cv::Size(0,0), 5,5 );
 
 
             orientation_rate = dir - oldDir;
-
-//            std::cout << "speed: " << speed << std::endl;
-//            std::cout << "Dir: " << dir << std::endl;
-//            std::cout << "Orien: " << orientation_rate << std::endl;
 
             pf.prediction(1, 0.5, speed, orientation_rate, robot);
 
@@ -115,16 +114,11 @@ int main()
 
             pf.drawRobotParticle(robot, map);
 
+           // pf.updateTheWeights(map, robot);
+
             // Find the good particles when compared to the robots view
             pf.associateParticlesWithRobot(robot);
 
-//            while(true){
-//                key = cv::waitKey(0);
-
-//                if(key == 'q'){
-//                    break;
-//                }
-//            }
 
             if(key == 's'){
                 pf.resampleParticles(numberOfResample, stdPos);
@@ -139,23 +133,12 @@ int main()
             }
 
 
-            //stdPos -= 0.01;
-            //pf.lidarParticles(map);
-
-            //pf.drawParticles(map);
-
             pf.drawLidarParticles(map);
 
             //cv::resize(resample, resample, cv::Size(0,0), 5,5);
             cv::imshow("Map", map);
 
-//            while(true){
-//                key = cv::waitKey(0);
 
-//                if(key == 'q'){
-//                    break;
-//                }
-//            }
         }
     }
 
