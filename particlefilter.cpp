@@ -153,6 +153,10 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         double y = particle.y;
         double orien = particle.orientation;
 
+//        if (orien > 360 ) {
+//            orien /= 360;
+//        }
+
 
         // Odometry
 
@@ -165,18 +169,18 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
             orien += delta_timestep * orientation_rate;
         }
 
-//        particle.x = x;
-//        particle.y = y;
-//        particle.orientation = orien;
+        particle.x = x;
+        particle.y = y;
+        particle.orientation = orien;
 
         // Noise from odometry
         std::normal_distribution<double> noise_x(x, stdPos);
         std::normal_distribution<double> noise_y(y, stdPos);
         std::normal_distribution<double> noise_orien(orien, stdPos);
 
-        particle.x = noise_x(rd);
-        particle.y = noise_y(rd);
-        particle.orientation = noise_orien(rd);
+//        particle.x = noise_x(rd);
+//        particle.y = noise_y(rd);
+//        particle.orientation = noise_orien(rd);
 
     }
 }
@@ -199,6 +203,9 @@ void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velo
         orien += delta_timestep * orientation_rate;
     }
 
+    std::cout << "x: " << x << " y: " << " orien: " << orien << std::endl;
+    std::cout << "vel: " << velocity << " orien_rate: " << orientation_rate << std::endl;
+
     robot.x = x;
     robot.y = y;
     robot.orientation = orien;
@@ -217,7 +224,7 @@ void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velo
 
 void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 
-    double stddiv = 2.0;
+    double stddiv = 5.0;
     double a = (1 / (stddiv * std::sqrt(2*CV_PI)));
 
     int i = 0;
