@@ -5,7 +5,7 @@ using namespace std;
 
 int main()
 {
-    Qlearning ql(20000);
+    Qlearning ql(30000);
 
     ql.train();
 

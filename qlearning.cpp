@@ -69,7 +69,7 @@ void Qlearning::initRewardMatrix(){
     rooms.push_back(room5Reward);
     Room room6Reward(10);
     rooms.push_back(room6Reward);
-    Room room7Reward(10);
+    Room room7Reward(20);
     rooms.push_back(room7Reward);
     Room room8Reward(5);
     rooms.push_back(room8Reward);
@@ -118,10 +118,10 @@ void Qlearning::initRewardMatrix(){
 
 
 // Get random init state
-void Qlearning::setRandomInitState(){
+void Qlearning::setRandomInitState(bool random, int state){
 
     random_device rd;
-    uniform_int_distribution<int> random(0, numberOfStates-1);
+    uniform_int_distribution<int> randomState(0, numberOfStates-1);
 
     // Markov property - keeping track of which rooms have been visited
     for(int i = 0; i < numberOfStates; i++){
@@ -130,8 +130,12 @@ void Qlearning::setRandomInitState(){
         rooms[i].numberOfVisits = 0;
     }
 
+    if(random){
+        initial_state_random = randomState(rd);
+    } else {
+        initial_state_random = state;
+    }
 
-    initial_state_random = random(rd);
 
     rooms[initial_state_random].isVisited = true;
 
@@ -278,7 +282,7 @@ void Qlearning::train(){
         cout << "Episode: " << episode << endl;
         //int current_state = 8;
         // Set random state - get the reward and mark as visitied
-        setRandomInitState();
+        setRandomInitState(true, 0);
 
         // Run an episode
         runEpisode();
@@ -289,7 +293,7 @@ void Qlearning::train(){
 
         // Update the epsilon value so it starts out exploring a lot and then less and less
         epsilon = min_exploration_rate + (max_exploration_rate - min_exploration_rate) * exp(-epsilon_decay * episode);
-        learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * exp(-learning_rate_decay * episode);
+        //learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * exp(-learning_rate_decay * episode);
         //cout << "epsilon: " << epsilon << endl;
     }
 
@@ -320,7 +324,7 @@ void Qlearning::deployAgent2(){
     // Epsilon as 0 so it only exploit what it has learned during training
     epsilon = 0;
     // Set init stata - get reward and mark as visited
-    setRandomInitState();
+    setRandomInitState(true,0);
     // Run 1 episode
     runEpisode();
 
@@ -335,7 +339,7 @@ void Qlearning::deployAgent(){
     cout << "Deploy agent" << endl;
 
     initRewardMatrix();
-    setRandomInitState();
+    //setRandomInitState();
 
     int current_state = initial_state_random;
     int stepCount = 0;
@@ -412,6 +416,9 @@ void Qlearning::dataToCSV(){
     for(auto &learning_rate : learningRateVec){
         outputFile << learning_rate << ",";
     }
+
+    outputFile.close();
+
 
     cout << "Data formatted to CSV file." << endl;
 

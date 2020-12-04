@@ -38,7 +38,7 @@ public:
     void initRewardMatrix();
 
     // Get random init state
-    void setRandomInitState();
+    void setRandomInitState(bool random, int state);
 
     // Get and take an action
     int takeAction(int current_state, bool display);
@@ -74,14 +74,13 @@ private:
     int initial_state;
     int initial_state_random;
 
-    float gamma = 0.8;
-    float learning_rate = 1.0;
-    float learning_rate_decay = 0.001;
-    float min_learning_rate = 0.001;
-    float max_learning_rate = 1.0;
+    float gamma = 0.3;
+    float learning_rate = 0.01;
 
     float epsilon = 1.0;
-    float epsilon_decay = 0.005;
+    float epsilon_decay = 0.00025;
+
+
     float min_exploration_rate = 0.01;
     float max_exploration_rate = 1.0;
 
@@ -96,7 +95,9 @@ private:
     vector<double> learningRateVec;
 
     ofstream outputFile;
-    string filename = "qlearningTestNew.csv";
+    //string filename = "qlearningTestNew.csv";
+    //string filename = "qlearningTestNewNo2.csv";
+    string filename = "qlearningTestNewNo3.csv";
 
 };
 
