@@ -13,6 +13,8 @@
 
 #include <vector>
 #include <bits/stdc++.h>
+#include <exception>
+#include <queue>
 
 
 class Astar
@@ -21,7 +23,7 @@ public:
 
     struct nodes {
       cv::Point pos;
-      double g_cost;
+      double g_cost = 0.0;
       double h_cost;
       double f_cost;
       cv::Point cameFrom;
@@ -42,6 +44,8 @@ public:
     std::vector<nodes> cost1(nodes);
     void fcost(nodes);
     double getFinalDistance() {return finalDistance;}
+    void showAndWriteFinalPath(std::string fileName, int iteration);
+    ~Astar(){ m_finalPath.clear(); openList.clear(); closedList.clear(); };
 
 
 private:
@@ -51,9 +55,9 @@ private:
     double finalDistance = 0;
 
     std::vector<nodes> openList, closedList;
-
-    std::vector<std::tuple<double, double, cv::Point>> open, closed;
     std::vector<cv::Point> m_finalPath;
+
+//    std::vector<std::tuple<double, double, cv::Point>> open, closed;
 
 };
 

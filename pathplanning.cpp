@@ -11,21 +11,7 @@ pathPlanning::pathPlanning(std::string ImageIn)
 
 }
 
-void pathPlanning::non_maxima_suppression(const cv::Mat& image, cv::Mat& mask, bool remove_plateaus) {
-    // find pixels that are equal to the local neighborhood not maximum (including 'plateaus')
-    cv::dilate(image, mask, cv::Mat());
-    cv::compare(image, mask, mask, cv::CMP_GE);
-
-    // optionally filter out pixels that are equal to the local minimum ('plateaus')
-    if (remove_plateaus) {
-        cv::Mat non_plateau_mask;
-        cv::erode(image, non_plateau_mask, cv::Mat());
-        cv::compare(image, non_plateau_mask, non_plateau_mask, cv::CMP_GT);
-        cv::bitwise_and(mask, non_plateau_mask, mask);
-    }
-}
-
-void pathPlanning::brushfire() {
+void pathPlanning::brushfire(bool showImages, int imageScaleFactor) { //If showImages is set to true, all the steps in finding the node is shown.
     // Grayscale image to get one channel
     cv::Mat image;
     cv::cvtColor(imageOrg, image, cv::COLOR_RGB2GRAY);
@@ -72,19 +58,29 @@ void pathPlanning::brushfire() {
         }
     }
 
-    //Pixel values from bottom to top
+    //Pixel values from bottom to topdilated
     index = 2;
+    for (size_t j = 0; j < cols; j++){
+        for (size_t i = 0; i < rows; i++) {
+            if (brushValues[rows - 1 - i][j] != 0 && brushValues[rows - 1 - i][j] > index){
+                brushValues[rows - 1 - i][j] = index++;
+            } else if (brushValues[rows - 1 - i][j] == 0){
+                index = 2;
+            }
+        }
+    }
+
 
     // Correction of numbers so they only jump one up or down in each direction
-
     int value = 0;
     while(value < 15){
 
-        for (size_t j = 1; j < cols - 1; j++){
-            for (size_t i = 1; i < rows - 1; i++) {
+        for (size_t j = 0; j < cols; j++){
+            for (size_t i = 0; i < rows; i++) {
                 // Checks if the neighbour right is 2 or more values from the current pixel value
                 if (brushValues[i][j] != 0 && brushValues[i][j] != 2){
                     if (abs(brushValues[i][j] - brushValues[i + 1][j]) >= 2 ){
+
 
                         if (brushValues[i][j] - brushValues[i + 1][j] <= -2 ){
                             brushValues[i][j]++;
@@ -93,7 +89,7 @@ void pathPlanning::brushfire() {
                         }
                     }
 
-//                    // Checks neighbour left
+                    // Checks neighbour left
                     if (abs(brushValues[i][j] - brushValues[i - 1][j]) >= 2 ){
 
 
@@ -104,7 +100,7 @@ void pathPlanning::brushfire() {
                         }
                     }
 
-//                    // Checks neighbour down
+                    // Checks neighbour down
                     if (abs(brushValues[i][j] - brushValues[i][j + 1]) >= 2 ){
 
                         if (brushValues[i][j] - brushValues[i][j + 1] <= -2 ){
@@ -114,7 +110,7 @@ void pathPlanning::brushfire() {
                         }
                     }
 
-//                    // Checks neighbour up
+                    // Checks neighbour up
                     if (abs(brushValues[i][j] - brushValues[i][j - 1]) >= 2 ){
 
                         if (brushValues[i][j] - brushValues[i][j - 1] <= -2 ){
@@ -132,48 +128,134 @@ void pathPlanning::brushfire() {
     const double divider = 255 / 10; // 15 is choosen because it is the highest value in the grid
 
     // Create a grayscale image of the brushfire algoritme
-    cv::Mat Brushfire (image.rows, image.cols, CV_8UC1);
+    Brushfire = image;
+
     for (size_t i = 0; i < brushValues.size(); i++){
         for (size_t j = 0; j < brushValues[i].size(); j++){
             divider * brushValues[i][j] > 255 ? Brushfire.at<uchar>(i, j) = 255 : Brushfire.at<uchar>(i, j) = divider * brushValues[i][j];
         }
     }
 
-    cv::imshow("Brushfire first ", Brushfire);
-    cv::Mat BigBrush, originalScaled, dilated, Points, filter;
-    cv::Size size(cols, rows);
 
-    cv::resize(Brushfire, BigBrush, size);
-    cv::resize(imageOrg, originalScaled, size);
-    std::cout << std::endl;
+    findNodes(showImages, imageScaleFactor);
+    std::cerr << "time taken: " << (float)clock()/CLOCKS_PER_SEC << " secs" << std::endl;
+}
 
-//    cv::dilate(BigBrush, dilated, cv::Mat());
-//    cv::compare(BigBrush, dilated, dilated, cv::CMP_GE);
-//    cv::erode(BigBrush, filter, cv::Mat());
-//    cv::compare(BigBrush, filter, filter, cv::CMP_GT);
-//    cv::bitwise_and(dilated, filter, dilated);
+void pathPlanning::findNodes(bool showImages, int scaleFactor)
+{
+    //Finding the nodes using center of mass
+    //--------------------------------------------------
 
-//    non_maxima_suppression(BigBrush, dilated, true); //Original
-    non_maxima_suppression(Brushfire, dilated, true);
+    cv::Mat dilated, thresholded_matching_space, local_maxima, thresholded_8bit;
+
+    cv::dilate(Brushfire, dilated, cv::Mat());
+
+    //Compare the dilated image to the orginal and put it in a new Mat
+    cv::compare(Brushfire, dilated, local_maxima, cv::CMP_EQ);
+
+    cv::Mat scaled_local_max;
+    local_maxima.copyTo(scaled_local_max);
+
+
+    //Skal ligge omkring 150
+    int threshold = 150;
+    //Change the original grayscale image to a binary image of black and white, depending on the value of each pixel.
+    //If the pixel value is greater than 150 then it turns white.
+    cv::threshold(Brushfire, thresholded_matching_space, threshold, 255, cv::THRESH_BINARY);
+
+    thresholded_matching_space.convertTo(thresholded_8bit, CV_8U);
+
+    cv::bitwise_and(local_maxima, thresholded_8bit, local_maxima);
 
     std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(dilated, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(local_maxima, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0,0));
 
+    //get moments
+    //A moment is a shape difined by a contour.
+    std::vector<cv::Moments> mu(contours.size());
+    for (size_t i = 0; i < contours.size(); i++) {
+        //Each object in mu is a shape made from the contours
+        mu[i] = cv::moments(contours[i], false);
+    }
 
+    //get centroids of figures
+    std::vector<cv::Point> mc(contours.size());
+    for (size_t i = 0; i < contours.size(); i++) {
+        //https://docs.opencv.org/3.4/d8/d23/classcv_1_1Moments.html
+        //The center of mass of each shape in mu i caluclated and put in vector mc.
+        mc[i] = cv::Point( mu[i].m10/mu[i].m00, mu[i].m01/mu[i].m00);
+    }
 
-    for( auto& contour:contours) {
-        auto localMax = contour.begin() + contour.size() / 4;
-//        std::cout << localMax << std::endl;
-        cv::circle(originalScaled, *localMax, 2, cv::Scalar(0,0,255));
+    //Remove "not a number" points (NaN)
+    //"Since the contour moments are computed using Green formula, you may get seemingly odd results for contours with
+    //self-intersections, e.g. a zero area (m00) for butterfly-shaped contours."
+    for(size_t i = mc.size() - 1; i > 0; i--) {
+        if (mc[i].x < 0) {
+            mc.erase(mc.begin() + i);
+        }
     }
 
 
-//    cv::namedWindow("Brushfire");
-//    cv::imshow("Scaled original map", originalScaled);
-//    cv::imshow("All points", imageOrg);
-//    cv::imshow("Brushfire", BigBrush);
-//    cv::imwrite("brushfire.png", Brushfire);
-//    cv::imshow("Dilated", dilated);
-//    cv::waitKey(0);
-    std::cerr << "time taken: " << (float)clock()/CLOCKS_PER_SEC << " secs" << std::endl;
+    //Remove points that are close to eachother within a set threshold
+    int closnes_threshold = 11;
+    for (size_t i = mc.size() - 1 ; i > 0 ; i--) {
+        for (size_t j = i - 1 ; j > 1; j--) {
+            if (i == j) {
+                //Do nothing
+            } else if (abs(mc[i].x - mc[j].x) < closnes_threshold && abs(mc[i].y - mc[j].y) < closnes_threshold) {
+                mc.erase(mc.begin() + i);
+            }
+        }
+    }
+
+    //Draw the final points in the original image.
+    for (size_t i = 0; i < mc.size(); i++) {
+        cv::Scalar color = cv::Scalar(255,0,0);
+        cv::drawMarker(imageOrg, mc[i], color, cv::MARKER_STAR, 1, 1, 8);
+        //std::cout << mc[i] << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << std::endl;
+
+
+    if (showImages) {
+        cv::Mat scaledImage(imageOrg.cols * 3, imageOrg.rows * 3, CV_8UC3);
+        cv::resize(imageOrg, scaledImage, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(Brushfire, Brushfire, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(dilated, dilated, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(local_maxima, local_maxima, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(thresholded_matching_space, thresholded_matching_space, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(thresholded_8bit, thresholded_8bit, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+        cv::resize(scaled_local_max, scaled_local_max, cv::Size(imageOrg.cols * scaleFactor, imageOrg.rows * scaleFactor), 0, 0, cv::INTER_NEAREST);
+
+        cv::imshow("Original Brushfire", Brushfire);
+        cv::waitKey(0);
+        cv::imshow("Brushfire Dilated", dilated);
+        cv::waitKey(0);
+        cv::imshow("local max", scaled_local_max);
+        cv::waitKey(0);
+        cv::imshow("max", local_maxima);
+        cv::waitKey(0);
+        cv::imshow("Thresholded Brushfire", thresholded_matching_space);
+        cv::waitKey(0);
+        cv::imshow("8_bit", thresholded_8bit);
+        cv::waitKey(0);
+
+        cv::imshow("Original with point", scaledImage);
+        cv::waitKey(0);
+    }
+
+    cv::imwrite("Points_on_image.png", imageOrg);
+
+    std::ofstream write;
+    write.open("nodes found.txt");
+
+    for (size_t i = 0; i < mc.size(); i++) {
+        write << mc[i] << std::endl;
+    }
+    write.close();
+
+    nodes = mc;
+
+
 }

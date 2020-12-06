@@ -6,7 +6,7 @@ Astar::Astar(std::string ImageIn)
     // loading image
     imageOrg = cv::imread(ImageIn);
     if (imageOrg.empty()){
-        std::cerr << "Could not load image" << std::endl;
+        std::cerr << "Could not load image in astar" << std::endl;
     }
     openList.reserve(300);
 }
@@ -34,17 +34,19 @@ void Astar::findPath(cv::Point startPoint, cv::Point end)
     }
 
     closedList.push_back(node);
-
-    int count = 0;
+    int countExpansions = 0;
     while (node.pos != target) {
         node = openList[0];
         closedList.push_back(openList[0]);
         openList.erase(openList.begin());
         fcost(node);
-//        showImage(1);
+        //showImage(1);
 
-        count++;
+        //Every time a node is being poped from the open list, then the node is expanding.
+        //The fever expansion the faster the goal is found.
+        countExpansions++;
     }
+    //std::cout << "Number of expansions: " << countExpansions << std::endl;
 }
 
 bool Astar::notInClosed(cv::Point position)
@@ -104,9 +106,9 @@ void Astar::showClosedList()
 
 bool Astar::notBoundary(cv::Point currentPoint)
 {
-    if ((unsigned long)currentPoint.x > brushfireValues[0].size() - 1)
+    if ((unsigned long)currentPoint.x > imageOrg.cols/*brushfireValues[0].size() - 1*/)
         return false;
-    else if ((unsigned long)currentPoint.y > brushfireValues.size() - 1)
+    else if ((unsigned long)currentPoint.y > imageOrg.rows/*brushfireValues.size() - 1*/)
         return false;
     else if (currentPoint.x < 1 || currentPoint.y < 1)
         return false;
@@ -118,9 +120,10 @@ bool Astar::notBoundary(cv::Point currentPoint)
 void Astar::showImage(int sel)
 {
 
-     cv::Mat finalPath;
+    cv::Mat finalPath;
     finalPath = imageOrg.clone();
-
+    finalPath.at<cv::Vec3b>(start) = {255, 0, 0};
+    finalPath.at<cv::Vec3b>(target) = {255, 0, 0};
 
     if (sel == 1) {
         for (size_t x = 0; x < closedList.size(); x++) {
@@ -129,11 +132,12 @@ void Astar::showImage(int sel)
         for (size_t x = 0; x < openList.size(); x++) {
             finalPath.at<cv::Vec3b>(openList[x].pos) = {0, 255, 0};
         }
-        cv::namedWindow("Final *");
+
         cv::imwrite("astar.png", finalPath);
+        cv::resize(finalPath, finalPath, cv::Size(finalPath.cols * 6, finalPath.rows * 6), 0, 0, cv::INTER_NEAREST);
         cv::imshow("final *", finalPath);
-        cv::waitKey(5);
-    } else {
+        cv::waitKey(1);
+    } else if (sel == 2) {
         for (size_t x = 0; x < closedList.size(); x++) {
             finalPath.at<cv::Vec3b>(closedList[x].pos) = {0, 0, 255};
         }
@@ -143,14 +147,22 @@ void Astar::showImage(int sel)
         for (size_t x = 0; x < m_finalPath.size(); x++) {
             finalPath.at<cv::Vec3b>(m_finalPath[x]) = {255, 0, 0};
         }
-        cv::namedWindow("Final *");
-        cv::imwrite("astar.png", finalPath);
-        cv::imshow("final *", finalPath);
+        cv::Mat scaledPath;
+        cv::resize(finalPath, scaledPath, cv::Size(finalPath.cols * 6, finalPath.rows * 6), 0,0, cv::INTER_NEAREST);
+        cv::imwrite("astar.png", scaledPath);
+        cv::imshow("final *", scaledPath);
         cv::waitKey(0);
+    } else if (sel == 3) {
+        cv::Mat scaledFinal = imageOrg.clone();
+        for (size_t x = 0; x < m_finalPath.size(); x++) {
+            scaledFinal.at<cv::Vec3b>(m_finalPath[x]) = {255, 0, 0};
+        }
+        cv::resize(scaledFinal, scaledFinal, cv::Size(imageOrg.cols * 6, imageOrg.rows * 6), 0,0, cv::INTER_NEAREST);
+        cv::imwrite("floor_plan.png", finalPath);
+        cv::imshow("final *", finalPath);
+        cv::waitKey(1);
+
     }
-
-
-
 }
 
 void Astar::finalPath()
@@ -177,11 +189,17 @@ std::vector<Astar::nodes> Astar::cost1( nodes currentNode)
             if (y == 0 && x == 0)
                 continue;
             if (notBoundary(cv::Point(currentNode.pos.x + x, currentNode.pos.y + y))) {
-                if (brushfireValues[currentNode.pos.y + y][currentNode.pos.x + x] != 0 && notInClosed(cv::Point(currentNode.pos.x + x, currentNode.pos.y + y))) {
+                if (imageOrg.at<cv::Vec3b>(cv::Point(currentNode.pos.x + x, currentNode.pos.y + y)) != cv::Vec3b{0,0,0} && notInClosed(cv::Point(currentNode.pos.x + x, currentNode.pos.y + y))) {
                     node.h_cost = sqrt(pow(target.x - (currentNode.pos.x + x), 2) + pow(target.y - (currentNode.pos.y + y), 2));
+
+                    //G-cost where diagional and straight moves have the same cost
+//                    node.g_cost = currentNode.g_cost + 1;
+
+                    //G-cost where the cost is calculated as and euclidean distance
                     double g_costCurrentNodeToNext = sqrt(pow(currentNode.pos.x - currentNode.pos.x + x, 2) + pow(currentNode.pos.y - currentNode.pos.y + y, 2));
                     double totalGCost = currentNode.g_cost + g_costCurrentNodeToNext;
                     node.g_cost = totalGCost;
+
                     node.pos = cv::Point(currentNode.pos.x + x, currentNode.pos.y + y);
                     node.cameFrom = currentNode.pos;
                     node.f_cost = node.h_cost + node.g_cost;
@@ -205,12 +223,9 @@ void Astar::fcost(nodes currentNode)
 
     std::vector<nodes> currentPositionCost = cost1(currentNode);
 
-
     while (currentPositionCost.size()) {
         nodes nodeToCheck = currentPositionCost[0];
-
         if (notInOpen(nodeToCheck.pos)) {
-
             if (nodeToCheck.f_cost < openList[0].f_cost) {
                 fcostCheck = lessThan;
             } else if (nodeToCheck.f_cost == openList[0].f_cost) {
@@ -223,15 +238,13 @@ void Astar::fcost(nodes currentNode)
             case lessThan:
                 openList.insert(openList.begin(), nodeToCheck);
                 break;
-
             case equalTo:
                 index = 0;
                 while (nodeToCheck.f_cost == openList[index].f_cost && nodeToCheck.h_cost < openList[index].h_cost && index < openList.size()) { // Den må heller ikke gå ud over vektoren
                     index++;
                 }
-                openList.insert(openList.begin() + index - 1, nodeToCheck);
+                openList.insert(openList.begin() + index, nodeToCheck);
                 break;
-
             case greaterThan:
                 index = 0;
                 while (nodeToCheck.f_cost > openList[index].f_cost && index < openList.size()) {
@@ -243,12 +256,8 @@ void Astar::fcost(nodes currentNode)
                     }
                 }
                 openList.insert(openList.begin() + index, nodeToCheck);
-
                 break;
-
             }
-
-
         } else if (!notInOpen(nodeToCheck.pos)) {
             //Find index
             int index = 0;
@@ -258,7 +267,6 @@ void Astar::fcost(nodes currentNode)
                     break;
                 }
             }
-
             if (nodeToCheck.f_cost < openList[index].f_cost) {
                 fcostCheck = lessThan;
             } else if (nodeToCheck.f_cost == openList[index].f_cost) {
@@ -266,35 +274,92 @@ void Astar::fcost(nodes currentNode)
             } else if (nodeToCheck.f_cost > openList[index].f_cost) {
                 fcostCheck = greaterThan;
             }
-
-
             switch (fcostCheck) {
             case lessThan:
                 openList[index] = nodeToCheck;
                 break;
-
             case equalTo:
                 if (nodeToCheck.h_cost <= openList[index].h_cost) {
                     openList[index] = nodeToCheck;
                 }
                 break;
-
             case greaterThan:
                 // Wont change the node currently in the list to the new node if the f-cost to that point is worse
                 break;
-
             }
-
-
         }
-
-
-
-
-
         currentPositionCost.erase(currentPositionCost.begin());
+    }
+}
+
+void Astar::showAndWriteFinalPath(std::string fileName, int iteration)
+{
+    // A switch case to change the color. Only works if there are 15 enties or less.
+    cv::Vec3b color;
+    switch (iteration + 1) {
+    case 1:
+        color = {0, 102, 255};
+        break;
+    case 2:
+        color = {0, 204, 255};
+        break;
+    case 3:
+        color = {0, 255, 204};
+        break;
+    case 4:
+        color = {0, 255, 102};
+        break;
+    case 5:
+        color = {0, 255, 0};
+        break;
+    case 6:
+        color = {102, 255, 0};
+        break;
+    case 7:
+        color = {204, 255, 0};
+        break;
+    case 8:
+        color = {255, 204, 0};
+        break;
+    case 9:
+        color = {255, 102, 0};
+        break;
+    case 10:
+        color = {255, 0, 0};
+        break;
+    case 11:
+        color = {255, 0, 102};
+        break;
+    case 12:
+        color = {255, 0, 204};
+        break;
+    case 13:
+        color = {204, 0, 255};
+        break;
+    case 14:
+        color = {102, 0, 255};
+        break;
+    case 15:
+        color = {0, 0, 255};
+        break;
 
     }
 
+    cv::Mat FinalPath, scaledPath;
+    FinalPath = imageOrg;
+
+    cv::drawMarker(imageOrg, start, cv::Vec3b(0,0,255), cv::MARKER_CROSS, 5,1);
+    cv::drawMarker(imageOrg, target, cv::Vec3b(255,0,0), cv::MARKER_CROSS, 5,1);
+
+    for (size_t x = 0; x < m_finalPath.size(); x++) {
+        imageOrg.at<cv::Vec3b>(m_finalPath[x]) = color;
+    }
+//    scaledPath = FinalPath;
+//    cv::resize(scaledPath, scaledPath, cv::Size(FinalPath.cols * 5, FinalPath.rows * 5), 0,0, cv::INTER_NEAREST);
+    cv::imwrite(fileName, FinalPath);
+//    cv::imshow(fileName, scaledPath);
+    cv::waitKey(1);
 }
+
+
 

@@ -37,55 +37,13 @@ double travel::calcPath(std::vector<int> order)
     return distance;
 }
 
-std::vector<int> travel::calcPathLexi(std::vector<std::vector<int> > &comb, std::vector<location> &lookup)
-{
-    double bestRoute = std::numeric_limits<double>::infinity();
-    std::vector<std::vector<int>> bestCombination;
-    bestCombination.push_back(comb[0]);
-
-
-    for (size_t i = 0; i < comb.size(); i++) {
-        double distance = 0;
-        for (size_t j = 0; j < comb[i].size() - 2; j++) {
-            long long int index;
-            long long int nextIndex;
-
-            if (comb[i][j] < comb[i][j + 1]) {
-                index = comb[i][j];
-                nextIndex = comb[i][j + 1];
-            } else {
-                index = comb[i][j + 1];
-                nextIndex = comb[i][j];
-            }
-
-            if (index < 0) {
-                index = -16;
-            }
-
-            for (size_t k = 0; k < lookup[index - 1].distance.size(); k++) {
-                if (lookup[index - 1].distance[k].first == nextIndex) {
-                    distance += lookup[index - 1].distance[k].second;
-                    break;
-                }
-            }
-        }
-        if (distance < bestRoute) {
-            bestRoute = distance;
-            bestCombination[0] = comb[i];
-        }
-    }
-
-    overallBest = bestRoute;
-    return bestCombination[0];
-}
-
-
 void travel::createPopulation(int num)
 {
     for (int i = 0; i < num; i++) {
+        //Push back vectors
         population.push_back(initialPath);
         std::random_shuffle(initialPath.begin(), initialPath.end());
-    }
+    }  
 }
 
 void travel::calculateFitness()
@@ -93,10 +51,9 @@ void travel::calculateFitness()
     fitness.clear();
     for (size_t i = 0; i < population.size(); i++) {
         double d = calcPath(population[i]);
-        double fitnessScore = (1 / d) * 100000;
+        double fitnessScore = (1 / d) ;
         fitness.push_back(fitnessScore);
     }
-
 }
 
 void travel::normalizeFitness()
@@ -110,34 +67,29 @@ void travel::normalizeFitness()
     }
 }
 
-
 std::vector<int> travel::pickOne(std::vector<std::vector<int> > population, std::vector<double> fitness)
 {
     int index = 0;
     double r = (rand() % 100) / 100.0;
 
     while (r > 0) {
-        r = r - fitness[index++];
+        r = r - fitness[index];
+        index++;
     }
     index--;
-//    try {
     if (index < 0) {
         return population[0];
     }
         return population[index];
-//    } catch (std::exception& e) {
-//        std::cout << "Cannot return index: " << index << " " << e.what() << std::endl;
-//    }
 
 }
 
-void travel::mutate(std::vector<int> order, int mutationRate)
+void travel::mutate(std::vector<int> &order, int mutationRate)
 {
     int indexA = rand() % order.size();
     int indexB = rand() % order.size();
     std::swap(order[indexA], order[indexB]);
 }
-
 
 void travel::nextGeneration()
 {
