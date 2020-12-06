@@ -8,8 +8,63 @@ using namespace std;
 
 double lidarDistanceMarble = 0;
 
+double realMarbleDistance = 4.241715;
 
-double calculateDistanceToMarble(const double &radius, cv::Point &center){
+vector<double> realDistMarble;
+vector<double> estimatedDistMarble = {3.87942, 4.59784, 4.43363, 4.00457, 4.28074, 4.13805};
+
+double angleToDetectedMarble = 0;
+
+bool saveDistance = false;
+
+
+void dataToCSV(){
+
+    ofstream outputFile;
+    string filename = "marbleDistance.csv";
+
+    outputFile.open(filename);
+
+    for(auto &realDist : realDistMarble){
+        outputFile << realDist << ",";
+    }
+
+    outputFile << endl;
+
+    for(auto &estimatedDist : estimatedDistMarble){
+        outputFile << estimatedDist << ",";
+    }
+
+    outputFile.close();
+
+
+    cout << "Data sent to CSV file." << endl;
+
+}
+
+double calculateAngleToMarble(std::vector<cv::Vec3f> circles, int closestCircleDetected){
+
+    const double horizontalResolution = 320;
+    const double widthFromMid = horizontalResolution/2;
+    const double horizontalFOV = 60;
+    const double hFOVmiddle = horizontalFOV/2;
+
+    int xCoordinateCircle = circles[closestCircleDetected][0];
+
+    double displacementRatio = double(xCoordinateCircle) / widthFromMid;
+
+    double marbleAngleHorizontal = (displacementRatio - 1) * hFOVmiddle;
+
+    return marbleAngleHorizontal;
+
+
+    //std::cout << "Horizontal Angle: " << marbleAngleHorizontal << std::endl;
+
+
+}
+
+
+double calculateDistanceToMarble(const double &radius){
 
     const double pixelToMM = 0.2645833333;
     double distance, distanceToMarble;
@@ -51,18 +106,26 @@ double calculateDistanceToMarble(const double &radius, cv::Point &center){
 
     distance = (focalLenght * horiResMM) / diameterDetectedMarble;
 
-
     distanceToMarble = (distance * pixelToMM) / 100.0;
 
 
-   // distance = (distanceIn3D * focalLenght) / diameterDetectedMarble;
+//    cout << "dist: " << distanceToMarble << endl;
+//    cout << "Lidar dist: " << lidarDistanceMarble << endl;
 
+    double percentageDeviation = abs((distanceToMarble - lidarDistanceMarble)) / lidarDistanceMarble * 100.0;
 
-     cout << "dist: " << distanceToMarble << endl;
-     cout << "Lidar dist: " << lidarDistanceMarble << endl;
+    //cout << "deviation: " << percentageDeviation << "%" << endl;
+
+    cout << endl;
+
+//    if(saveDistance){
+//        realDistMarble.push_back(lidarDistanceMarble);
+//        estimatedDistMarble.push_back(distanceToMarble);
+
+//        saveDistance = false;
+//    }
 
     return distanceToMarble;
-
 }
 
 
@@ -75,7 +138,7 @@ double houghDetection(cv::Mat &gray, cv::Mat &imgOutput, int cannyValue, int acc
     std::vector<cv::Vec3f> circles;
 
     // opencv built in function to detect circles in frame
-    HoughCircles(gray, circles, cv::HOUGH_GRADIENT, 1, gray.rows/4, cannyValue, accumulatorValue, 0, 0 );
+    HoughCircles(gray, circles, cv::HOUGH_GRADIENT, 1, gray.rows, cannyValue, accumulatorValue, 0, 0 );
 
     //Set if marble is detected
     bool marbleDetected = false;
@@ -94,7 +157,7 @@ double houghDetection(cv::Mat &gray, cv::Mat &imgOutput, int cannyValue, int acc
           // center of the circle
           double radius = cvRound(circles[i][2]);
 
-          distToMarble = calculateDistanceToMarble(radius, center);
+          distToMarble = calculateDistanceToMarble(radius);
 
           //cout << "dist to marble: " << distToMarble << endl;
 
@@ -109,26 +172,9 @@ double houghDetection(cv::Mat &gray, cv::Mat &imgOutput, int cannyValue, int acc
           }
       }
 
-//      // Calculate angle to marble
-//      calculateAngleToMarble(circles, closestCircleDetected);
-//      if(marbleAngleHorizontal < -2){
-//         // std::cout << "Go Left" << std::endl;
-//      } else if(marbleAngleHorizontal > 2){
-//          //std::cout << "Go Right" << std::endl;
-//      }
+    angleToDetectedMarble = calculateAngleToMarble(circles, closestCircleDetected);
 
-//      // Radius of closest circle
-
-//      int radiusClosest = circles[closestCircleDetected][2];
-
-//      if(radiusClosest > oldRadius){
-//        //std::cout << "Radius: " << radiusClosest << std::endl;
-//        oldRadius = radiusClosest;
-//      }
-
-
-      // Distance to marble when detected
-      //calculateDistanceToMarbleFromCamera(radiusClosest);
+    cout << "Angle to marble from center: " << angleToDetectedMarble << endl;
 
     }
     return distToMarble;
