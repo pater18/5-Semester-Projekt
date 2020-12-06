@@ -11,7 +11,7 @@ int main()
 {
 
     cv::Mat map;
-    map = cv::imread("floor_plan2.png");
+    map = cv::imread("floor_plan.png");
 
     cv::resize(map, map, cv::Size(map.cols * 3, map.rows * 3), 0, 0, cv::INTER_NEAREST);
 
@@ -21,7 +21,7 @@ int main()
 
     double std[] = {2,2,2};
 
-    Particle robot = {0, int(map.cols/2), int(map.rows/2-50), 180, 1.0};
+    Particle robot = {0, int(map.cols/2-60), int(map.rows/2-10), 0, 1.0};
 
     for(auto & range : robot.lidar){
         range = 10.0;
@@ -46,6 +46,7 @@ int main()
 
     int numberOfResample = 300;
     double stdPos = 10.0;
+    int counterResample = 0;
 
     while(true){
 
@@ -99,7 +100,7 @@ int main()
 
         if(run == true){
 
-            map = cv::imread("floor_plan2.png");
+            map = cv::imread("floor_plan.png");
 
             cv::resize(map, map, cv::Size(map.cols * 3, map.rows * 3), 0, 0, cv::INTER_NEAREST);
 
@@ -136,13 +137,18 @@ int main()
             if(key == 's'){
                 pf.resampleParticles(numberOfResample, stdPos);
                 if(numberOfResample > 50){
-                    stdPos -= 1.0;
+                    if (stdPos != 2.0) {
+                      stdPos -= 1.0;
+                    }
                     numberOfResample -= 30;
+
                 } else {
                     numberOfResample = 50;
                     stdPos = 2.0;
                 }
-
+                counterResample++;
+                std::cout << "counterResample: " << counterResample << std::endl;
+                std::cout << "std: " << stdPos << std::endl;
             }
 
 

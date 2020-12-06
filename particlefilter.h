@@ -19,7 +19,7 @@ struct Particle {
     std::vector<double> sense_x;
     std::vector<double> sense_y;
 
-    double lidar[50];
+    double lidar[70];
 
 };
 
@@ -80,9 +80,9 @@ private:
     std::default_random_engine dre;
 
 
-    double lidarMaxRange = 30.0;
+    double lidarMaxRange = 50.0;
     double lidarFov = 270.0;
-    double noPoints = 50.0;
+    double noPoints = 70.0;
     double angle_increment = (lidarFov / noPoints) * (3.14 / 180.0);
 
     int numberOfParticles = 0;

@@ -153,10 +153,6 @@ void ParticleFilter::prediction(double delta_timestep, double stdPos, double vel
         double y = particle.y;
         double orien = particle.orientation;
 
-//        if (orien > 360 ) {
-//            orien /= 360;
-//        }
-
 
         // Odometry
 
@@ -225,7 +221,7 @@ void ParticleFilter::moveRobot(double delta_timestep, double stdPos, double velo
 void ParticleFilter::associateParticlesWithRobot(Particle &robot){
 
     double stddiv = 5.0;
-    double a = (1 / (stddiv * std::sqrt(2*CV_PI)));
+    double a = (1 / (stddiv * 2*CV_PI));
 
     int i = 0;
     for(auto &particle : particles){
