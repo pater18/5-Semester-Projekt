@@ -324,7 +324,7 @@ void Qlearning::deployAgent2(){
     // Epsilon as 0 so it only exploit what it has learned during training
     epsilon = 0;
     // Set init stata - get reward and mark as visited
-    setRandomInitState(true,0);
+    setRandomInitState(true, 0);
     // Run 1 episode
     runEpisode();
 

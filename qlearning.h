@@ -78,7 +78,7 @@ private:
     float learning_rate = 0.01;
 
     float epsilon = 1.0;
-    float epsilon_decay = 0.00025;
+    float epsilon_decay = 0.0001;
 
 
     float min_exploration_rate = 0.01;
