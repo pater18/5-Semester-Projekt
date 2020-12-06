@@ -5,8 +5,8 @@
 #include <random>
 #include <time.h>
 
-#include "callBackFunctions.h"
 #include "lidarsensor.h"
+#include "callBackFunctions.h"
 #include "fuzzycontroller.h"
 #include "pose.h"
 
@@ -66,6 +66,10 @@ int main(int _argc, char **_argv) {
     worldPublisher->Publish(controlMessage);
 
 
+    // Create an object for marble detection
+    //MarbleDetection marble;
+    //marble.runMarbleDetection();
+
     // Create an object for lidar sensor
     lidarSensor lidar;
     lidar.runLidarSensor();
@@ -86,6 +90,13 @@ int main(int _argc, char **_argv) {
     pose Pose;
     Pose.runPose();
 
+    // keys to control robot
+//    const int key_left = 81;
+//    const int key_up = 82;
+//    const int key_down = 84;
+//    const int key_right = 83;
+//    const int key_esc = 27;
+
     // initialize robot states
     bool emergencyStop = false;
     bool goalReached = false;
@@ -100,10 +111,11 @@ int main(int _argc, char **_argv) {
 
 
     // Test right half of the map
-    std::vector<cv::Point2d> goalPos {cv::Point2d(22.0, 6.0), cv::Point2d(34.0, 20.0), cv::Point2d(33.0, -12.0), cv::Point2d(18.0, -7.0), cv::Point2d(16.0, -21.0), cv::Point2d(-4.0, -21.0)};
+    //std::vector<cv::Point2d> goalPos {cv::Point2d(22.0, 6.0), cv::Point2d(34.0, 20.0), cv::Point2d(33.0, -12.0), cv::Point2d(18.0, -7.0), cv::Point2d(16.0, -21.0), cv::Point2d(-4.0, -21.0)};
 
     // Test left half of the map
     //std::vector<cv::Point2d> goalPos {cv::Point2d(-17.0, -2.0), cv::Point2d(-37.0, -6.0), cv::Point2d(-16.0, 0.0), cv::Point2d(-9.0, 16.0), cv::Point2d(0.0, 8.0), cv::Point2d(-26.0, 16.0), cv::Point2d(-37.0, 23.0)};
+    std::vector<cv::Point2d> goalPos {cv::Point2d(-17.0, -2.0), cv::Point2d(-14.0, 18.0)};
     std::vector<cv::Point2d> goalPosTemp = goalPos;
 
     // To visualize the paths taken by the robot from start to goal
@@ -120,6 +132,11 @@ int main(int _argc, char **_argv) {
         distRight = std::get<0>(ranges);
         distFront = std::get<1>(ranges);
         distLeft = std::get<2>(ranges);
+
+        // Distance to marble
+        //marble.distanceToMarbleOld(&lidar);
+        //marble.distanceToMarble(distFront);
+
 
         // Fuzzy controller angle calculation for go to goal point
         angleRobToPoint = std::atan2(goalPosTemp[0].y - Pose.getPosY(), goalPosTemp[0].x - Pose.getPosX());
@@ -140,8 +157,28 @@ int main(int _argc, char **_argv) {
 
 
         gazebo::common::Time::MSleep(10);
+
         int key = cv::waitKey(1);
 
+        // if "q" pressed - terminate program
+//        if (key == key_esc){
+//          break;
+//        }
+
+        // robot controller with arrow keys
+//        if ((key == key_up))
+//          speed += 0.05;
+//        else if ((key == key_down))
+//          speed -= 0.05;
+//        else if ((key == key_right) && (dir <= 0.4f))
+//          dir += 0.05;
+//        else if ((key == key_left) && (dir >= -0.4f))
+//          dir -= 0.05;
+//        else {
+//          // slow down
+//          //      speed *= 0.1;
+//               //dir *= 0.1;
+//        }
 
         // check if goal pos is reached
         if (( goalPosTemp[0].x == int(Pose.getPosX()) && goalPosTemp[0].y == int(Pose.getPosY()) )|| terminate) {

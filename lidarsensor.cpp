@@ -1,4 +1,4 @@
-#include "lidarsensor.h"
+    #include "lidarsensor.h"
 
 lidarSensor::lidarSensor(){
 }
@@ -59,7 +59,7 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
 
     //RIGHT LIDAR RANGE
     // go through all the lidar points - get distance - draw points and lines for displaying lidar data
-    for (int i = 0; i < rightRange; i++) {
+    for (int i = 30; i < rightRange; i++) {
     // angle for the lidar point
         float angle = angle_min + i * angle_increment;
         // distance from robot to where the lidar point hit an obstacle
@@ -107,7 +107,7 @@ void lidarSensor::lidarCallback(ConstLaserScanStampedPtr &msg) {
     }
 
     //LEFT LIDAR RANGE
-    for (int i = frontRange; i < leftRange; i++) {
+    for (int i = frontRange; i < leftRange-30; i++) {
         // angle for the lidar point
         float angle = angle_min + i * angle_increment;
         // distance from robot to where the lidar point hit an obstacle
